@@ -1,499 +1,110 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rosengut – Reparaturmeldungen</title>
-  <style>
-    :root {
-      --gruen: #006338;
-      --hintergrund: #f5f7f5;
-      --rand: #d8ded9;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--hintergrund);
-      color: #252925;
-      font-family: Arial, sans-serif;
-      line-height: 1.5;
-    }
-
-    header {
-      background: var(--gruen);
-      color: white;
-      padding: 22px 20px;
-    }
-
-    header div, main {
-      max-width: 850px;
-      margin: auto;
-    }
-
-    header h1 { margin: 0; font-size: 25px; }
-    header p { margin: 4px 0 0; }
-
-    main { padding: 24px 16px 50px; }
-
-    .hinweis {
-      background: #fff7df;
-      border: 1px solid #e8d9a7;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-
-    .karte {
-      background: white;
-      border: 1px solid var(--rand);
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 22px;
-    }
-
-    h2 { margin: 0 0 16px; font-size: 20px; }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin: 15px 0 6px;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 11px 12px;
-      border: 1px solid #aeb8b0;
-      border-radius: 6px;
-      font: inherit;
-      background: white;
-    }
-
-    textarea { min-height: 105px; resize: vertical; }
-
-    input:focus, textarea:focus, select:focus {
-      outline: 2px solid #78aa91;
-      outline-offset: 1px;
-    }
-
-    button {
-      border: 0;
-      border-radius: 6px;
-      padding: 11px 16px;
-      font: inherit;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .primaer {
-      background: var(--gruen);
-      color: white;
-    }
-
-    .sekundaer {
-      background: #edf1ed;
-      color: #26352a;
-    }
-
-    .loeschen {
-      background: #fbe9e7;
-      color: #8c2118;
-    }
-
-    .aktionen {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 18px;
-    }
-
-    .fall {
-      border: 1px solid var(--rand);
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 12px;
-      background: white;
-    }
-
-    .fall h3 { margin: 0 0 8px; }
-    .meta { color: #5a625c; font-size: 14px; }
-    .beschreibung { white-space: pre-wrap; overflow-wrap: anywhere; }
-
-    .marke {
-      display: inline-block;
-      background: #edf1ed;
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-size: 13px;
-      margin: 2px 4px 8px 0;
-    }
-
-    .foto {
-      display: block;
-      max-width: 100%;
-      max-height: 300px;
-      object-fit: contain;
-      margin-top: 12px;
-      border-radius: 6px;
-    }
-
-    .leer { color: #646b65; }
-
-    footer {
-      color: #646b65;
-      font-size: 12px;
-      text-align: center;
-      padding: 12px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rosengut – Reparaturmanagement</title>
+<style>
+:root{--green:#006338;--bg:#f4f6f4;--border:#d9e0da;--muted:#626b64;--red:#b42318;--yellow:#8a5b00;--blue:#2457a6;--done:#176b3a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#202620;font:16px/1.45 Arial,Helvetica,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+header{background:var(--green);color:white;padding:17px 20px}.header-inner,main{max-width:1100px;margin:auto}.header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-size:21px;font-weight:bold}.brand-sub{font-size:13px;opacity:.9}
+main{padding:22px 16px 50px}.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:20px;margin:0 0 14px}h3{font-size:17px;margin:0 0 7px}p{margin:6px 0}.muted,.meta{color:var(--muted);font-size:13px}
+.btn{border:1px solid transparent;border-radius:8px;padding:10px 14px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;gap:7px}.primary{background:var(--green);color:white}.light{background:white;border-color:var(--border);color:#202620}.danger{background:#fff0ef;color:var(--red);border-color:#f3c9c5}.small{padding:7px 10px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.tile{background:white;border:1px solid var(--border);border-radius:13px;padding:20px;min-height:145px;text-align:left;color:#202620}.tile:hover{border-color:#8db59c}.tile-icon{display:flex;align-items:center;justify-content:center;width:42px;height:42px;background:#e5f1e9;color:var(--green);border-radius:10px;font-size:23px;margin-bottom:12px}.tile strong{display:block}.tile span:last-child{display:block;color:var(--muted);font-size:13px;margin-top:5px}
+.panel{background:white;border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:18px}.hidden{display:none!important}
+.notice{background:#fff5d9;border:1px solid #ead8a1;border-radius:9px;padding:12px 14px;font-size:13px;margin:0 0 18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.field{margin-bottom:14px}.full{grid-column:1/-1}label{display:block;font-size:14px;font-weight:bold;margin-bottom:6px}
+input,textarea,select{width:100%;padding:11px 12px;border:1px solid #bac5bc;border-radius:7px;background:white;color:#202620}textarea{min-height:105px;resize:vertical}input:focus,textarea:focus,select:focus{outline:2px solid #83b69a;outline-offset:1px}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.toolbar{display:grid;grid-template-columns:minmax(180px,2fr) repeat(4,minmax(130px,1fr));gap:9px;margin:14px 0}
+.stats{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.stat{background:#f2f5f2;border:1px solid var(--border);padding:8px 11px;border-radius:8px;font-size:13px}
+.case-list{display:grid;gap:10px}.case{background:white;border:1px solid var(--border);border-radius:10px;padding:15px;display:grid;grid-template-columns:1fr auto;gap:12px}.case h3{overflow-wrap:anywhere}.tags{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}.badge{display:inline-flex;border-radius:30px;padding:4px 9px;font-size:12px;font-weight:bold;background:#edf0ed;color:#414941}.status-neu{background:#fde9e7;color:var(--red)}.status-unbearbeitet{background:#fff1cc;color:var(--yellow)}.status-bearbeitung{background:#e8f0ff;color:var(--blue)}.status-erledigt{background:#ddf3e4;color:var(--done)}.prio-Dringend{background:#fde9e7;color:var(--red)}.prio-Mittel{background:#fff1cc;color:var(--yellow)}
+.case-actions{display:flex;gap:7px;align-items:flex-start;flex-wrap:wrap}.empty{border:1px dashed #b9c4bb;border-radius:10px;text-align:center;padding:30px;color:var(--muted);background:white}
+.modal-backdrop{position:fixed;inset:0;background:#10171099;display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}.modal{background:white;border-radius:14px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:22px}.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.detail-item{background:#f5f7f5;border-radius:8px;padding:10px}.detail-item small{display:block;color:var(--muted);margin-bottom:3px}.photo{max-width:100%;max-height:300px;border-radius:8px;display:block;margin-top:10px;object-fit:contain}.log{border-left:2px solid #d6e3d9;padding:0 0 12px 14px;margin-left:6px}.log strong{font-size:13px}footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1}.case{grid-template-columns:1fr}.form-grid,.detail-grid{grid-template-columns:1fr}.full{grid-column:auto}}
+@media(max-width:480px){header{padding:14px}.brand{font-size:18px}main{padding:16px 12px 40px}.grid{gap:9px}.tile{padding:14px;min-height:135px}.panel{padding:15px}.toolbar{grid-template-columns:1fr}.toolbar input{grid-column:auto}.topline{align-items:flex-start}}
+</style>
 </head>
-
 <body>
-  <header>
-    <div>
-      <h1>Reparaturmeldungen</h1>
-      <p>Probleme melden. Lösungen anstoßen.</p>
-    </div>
-  </header>
-
-  <main>
-    <div class="hinweis">
-      <strong>Testmodus:</strong> Die Meldungen werden nur in diesem
-      Browser gespeichert. Andere Mitarbeitende sehen sie nicht.
-      Bitte keine vertraulichen Informationen oder echten Fotos
-      mit sensiblen Inhalten verwenden.
-    </div>
-
-    <section class="karte">
-      <h2>Neue Reparatur melden</h2>
-
-      <form id="formular">
-        <label for="email">Deine E-Mail-Adresse</label>
-        <input
-          id="email"
-          type="email"
-          placeholder="name@rosengut.de"
-          required
-        >
-
-        <label for="titel">Was ist kaputt?</label>
-        <input
-          id="titel"
-          type="text"
-          maxlength="120"
-          placeholder="z. B. Einkaufswagen defekt"
-          required
-        >
-
-        <label for="beschreibung">Beschreibung</label>
-        <textarea
-          id="beschreibung"
-          maxlength="3000"
-          placeholder="Was ist passiert? Was funktioniert nicht?"
-          required
-        ></textarea>
-
-        <label for="ort">Ort</label>
-        <input
-          id="ort"
-          type="text"
-          maxlength="200"
-          placeholder="z. B. Gewächshaus 3"
-          required
-        >
-
-        <label for="prioritaet">Priorität</label>
-        <select id="prioritaet" required>
-          <option value="Niedrig">Niedrig – nicht dringend</option>
-          <option value="Normal" selected>Normal – regulär beheben</option>
-          <option value="Hoch">Hoch – zeitnah prüfen</option>
-          <option value="Kritisch">Kritisch – sofort prüfen</option>
-        </select>
-
-        <label for="foto">Foto (optional)</label>
-        <input id="foto" type="file" accept="image/*">
-        <p class="meta">Bilder werden für den Test verkleinert.</p>
-        <div id="fotovorschau"></div>
-
-        <div class="aktionen">
-          <button class="primaer" type="submit">Meldung erstellen</button>
-          <button class="sekundaer" type="reset">Zurücksetzen</button>
-        </div>
-      </form>
-
-      <p id="meldung" aria-live="polite"></p>
-    </section>
-
-    <section>
-      <h2>Meine Testmeldungen</h2>
-      <p class="meta">Die neuesten Meldungen stehen oben.</p>
-      <div id="faelle"></div>
-      <div class="aktionen">
-        <button id="export" class="sekundaer" type="button">
-          Meldungen exportieren (JSON)
-        </button>
-        <button id="alleLoeschen" class="loeschen" type="button">
-          Alle Testmeldungen löschen
-        </button>
-      </div>
-    </section>
-  </main>
-
-  <footer>Rosengut · Interner Prototyp</footer>
-
-  <script>
-    const SPEICHER = 'rosengut-reparatur-test-v1';
-    const formular = document.getElementById('formular');
-    const fotoFeld = document.getElementById('foto');
-    const vorschau = document.getElementById('fotovorschau');
-    const meldung = document.getElementById('meldung');
-    let fotoDaten = '';
-
-    function laden() {
-      try {
-        const daten = JSON.parse(localStorage.getItem(SPEICHER) || '[]');
-        return Array.isArray(daten) ? daten : [];
-      } catch {
-        return [];
-      }
-    }
-
-    function speichern(faelle) {
-      try {
-        localStorage.setItem(SPEICHER, JSON.stringify(faelle));
-        return true;
-      } catch {
-        meldung.textContent =
-          'Speichern fehlgeschlagen. Möglicherweise ist der lokale Speicher voll.';
-        return false;
-      }
-    }
-
-    function sichereText(element, text) {
-      element.textContent = text || '';
-    }
-
-    function bildLesen(datei) {
-      return new Promise((resolve, reject) => {
-        if (!datei) return resolve('');
-
-        if (!datei.type.startsWith('image/')) {
-          return reject(new Error('Bitte eine Bilddatei auswählen.'));
-        }
-
-        if (datei.size > 12 * 1024 * 1024) {
-          return reject(new Error('Das Foto darf höchstens 12 MB groß sein.'));
-        }
-
-        const reader = new FileReader();
-
-        reader.onerror = () => reject(new Error('Das Foto konnte nicht gelesen werden.'));
-
-        reader.onload = () => {
-          const bild = new Image();
-
-          bild.onerror = () => reject(new Error('Die Bilddatei ist ungültig.'));
-
-          bild.onload = () => {
-            const max = 1200;
-            const faktor = Math.min(1, max / Math.max(bild.width, bild.height));
-            const canvas = document.createElement('canvas');
-
-            canvas.width = Math.max(1, Math.round(bild.width * faktor));
-            canvas.height = Math.max(1, Math.round(bild.height * faktor));
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(bild, 0, 0, canvas.width, canvas.height);
-
-            resolve(canvas.toDataURL('image/jpeg', 0.72));
-          };
-
-          bild.src = reader.result;
-        };
-
-        reader.readAsDataURL(datei);
-      });
-    }
-
-    fotoFeld.addEventListener('change', async () => {
-      vorschau.replaceChildren();
-      fotoDaten = '';
-
-      const datei = fotoFeld.files[0];
-      if (!datei) return;
-
-      try {
-        fotoDaten = await bildLesen(datei);
-        const bild = document.createElement('img');
-        bild.className = 'foto';
-        bild.alt = 'Vorschau des ausgewählten Fotos';
-        bild.src = fotoDaten;
-        vorschau.appendChild(bild);
-      } catch (e) {
-        meldung.textContent = e.message;
-        fotoFeld.value = '';
-      }
-    });
-
-    formular.addEventListener('submit', async event => {
-      event.preventDefault();
-      meldung.textContent = '';
-
-      const button = formular.querySelector('[type="submit"]');
-      button.disabled = true;
-
-      try {
-        const email = document.getElementById('email').value.trim();
-        const titel = document.getElementById('titel').value.trim();
-        const beschreibung = document.getElementById('beschreibung').value.trim();
-        const ort = document.getElementById('ort').value.trim();
-        const prioritaet = document.getElementById('prioritaet').value;
-
-        if (!email || !titel || !beschreibung || !ort) {
-          throw new Error('Bitte fülle alle Pflichtfelder aus.');
-        }
-
-        let bild = fotoDaten;
-
-        if (fotoFeld.files[0] && !bild) {
-          bild = await bildLesen(fotoFeld.files[0]);
-        }
-
-        const faelle = laden();
-
-        const neuerFall = {
-          id: crypto.randomUUID
-            ? crypto.randomUUID()
-            : String(Date.now()) + '-' + Math.random().toString(16).slice(2),
-          titel,
-          beschreibung,
-          ort,
-          prioritaet,
-          status: 'Offen',
-          email,
-          erstelltAm: new Date().toISOString(),
-          foto: bild
-        };
-
-        faelle.unshift(neuerFall);
-
-        if (!speichern(faelle)) return;
-
-        formular.reset();
-        fotoDaten = '';
-        vorschau.replaceChildren();
-        meldung.textContent = 'Testmeldung erfolgreich erstellt.';
-        anzeigen();
-      } catch (e) {
-        meldung.textContent = e.message || 'Es ist ein Fehler aufgetreten.';
-      } finally {
-        button.disabled = false;
-      }
-    });
-
-    formular.addEventListener('reset', () => {
-      fotoDaten = '';
-      vorschau.replaceChildren();
-      meldung.textContent = '';
-    });
-
-    function anzeigen() {
-      const container = document.getElementById('faelle');
-      container.replaceChildren();
-      const faelle = laden();
-
-      if (faelle.length === 0) {
-        const leer = document.createElement('p');
-        leer.className = 'leer';
-        leer.textContent = 'Noch keine Testmeldungen vorhanden.';
-        container.appendChild(leer);
-        return;
-      }
-
-      faelle.forEach(fall => {
-        const karte = document.createElement('article');
-        karte.className = 'fall';
-
-        const titel = document.createElement('h3');
-        sichereText(titel, fall.titel);
-        karte.appendChild(titel);
-
-        const meta = document.createElement('p');
-        meta.className = 'meta';
-        meta.textContent =
-          'Ort: ' + fall.ort + ' · Erstellt: ' +
-          new Date(fall.erstelltAm).toLocaleString('de-DE');
-        karte.appendChild(meta);
-
-        const badges = document.createElement('div');
-
-        [ 'Priorität: ' + fall.prioritaet, 'Status: ' + fall.status ]
-          .forEach(text => {
-            const badge = document.createElement('span');
-            badge.className = 'marke';
-            badge.textContent = text;
-            badges.appendChild(badge);
-          });
-
-        karte.appendChild(badges);
-
-        const beschreibung = document.createElement('p');
-        beschreibung.className = 'beschreibung';
-        sichereText(beschreibung, fall.beschreibung);
-        karte.appendChild(beschreibung);
-
-        const absender = document.createElement('p');
-        absender.className = 'meta';
-        sichereText(absender, 'Gemeldet von: ' + fall.email);
-        karte.appendChild(absender);
-
-        if (fall.foto) {
-          const bild = document.createElement('img');
-          bild.className = 'foto';
-          bild.alt = 'Foto zur Reparaturmeldung';
-          bild.src = fall.foto;
-          karte.appendChild(bild);
-        }
-
-        const loeschButton = document.createElement('button');
-        loeschButton.className = 'loeschen';
-        loeschButton.type = 'button';
-        loeschButton.textContent = 'Testmeldung löschen';
-        loeschButton.addEventListener('click', () => {
-          if (!confirm('Diese Testmeldung wirklich löschen?')) return;
-          speichern(laden().filter(item => item.id !== fall.id));
-          anzeigen();
-        });
-
-        karte.appendChild(loeschButton);
-        container.appendChild(karte);
-      });
-    }
-
-    document.getElementById('alleLoeschen').addEventListener('click', () => {
-      if (!confirm('Alle lokal gespeicherten Testmeldungen löschen?')) return;
-      if (speichern([])) {
-        meldung.textContent = 'Alle lokalen Testmeldungen wurden gelöscht.';
-        anzeigen();
-      }
-    });
-
-    document.getElementById('export').addEventListener('click', () => {
-      const daten = JSON.stringify(laden(), null, 2);
-      const url = URL.createObjectURL(
-        new Blob([daten], { type: 'application/json' })
-      );
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'rosengut-reparatur-testmeldungen.json';
-      link.click();
-      URL.revokeObjectURL(url);
-    });
-
-    anzeigen();
-  </script>
+<header><div class="header-inner"><div><div class="brand">Rosengut · Reparaturmanagement</div><div class="brand-sub">Melden. Bearbeiten. Erledigen.</div></div><button class="btn light small" id="roleButton">Testrolle: Mitarbeitende</button></div></header>
+<main>
+<div class="notice"><strong>Prototyp / Testmodus:</strong> Daten werden nur lokal in diesem Browser gespeichert. Es gibt noch keine echte Anmeldung oder zentrale Datenbank. Die Testrolle ist kein echter Passwortschutz. Bitte keine vertraulichen Daten eingeben.</div>
+<section id="homeView">
+<div class="topline"><div><h1>Willkommen</h1><p class="muted">Was möchtest du tun?</p></div></div>
+<div class="grid">
+<button class="tile" data-view="overview"><span class="tile-icon">▤</span><strong>Reparaturübersicht</strong><span>Fälle filtern, suchen und öffnen</span></button>
+<button class="tile" data-view="new"><span class="tile-icon">＋</span><strong>Neuen Fall melden</strong><span>Ein Problem schnell erfassen</span></button>
+<button class="tile" data-view="mine"><span class="tile-icon">☷</span><strong>Meine Meldungen</strong><span>Eigene Meldungen verfolgen</span></button>
+<button class="tile" data-view="admin"><span class="tile-icon">⚙</span><strong>Admin-Bereich</strong><span>Status, Priorität und Bearbeiter verwalten</span></button>
+</div>
+<section class="panel"><h2>Aktueller Überblick</h2><div class="stats" id="homeStats"></div></section>
+</section>
+<section id="newView" class="hidden">
+<div class="topline"><div><h1>Neuen Fall melden</h1><p class="muted">Fülle die wichtigsten Angaben aus.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
+<section class="panel"><form id="caseForm"><div class="form-grid">
+<div class="field full"><label for="reporter">Deine E-Mail-Adresse *</label><input id="reporter" type="email" required placeholder="name@rosengut.de"></div>
+<div class="field full"><label for="title">Kurzbeschreibung / Titel *</label><input id="title" maxlength="120" required placeholder="z. B. Hubwagen macht Schleifgeräusche"></div>
+<div class="field"><label for="area">Bereich / Abteilung *</label><select id="area" required><option value="">Bereich auswählen</option><option>Haus 8</option><option>Lager 1</option><option>Kasse</option><option>Café</option><option>Gewächshaus</option><option>Außenverkauf</option><option>Parkplatz</option><option>Büro</option><option>Sonstiges</option></select></div>
+<div class="field"><label for="priority">Priorität</label><select id="priority"><option>Niedrig</option><option selected>Mittel</option><option>Dringend</option></select></div>
+<div class="field full"><label for="description">Genauere Beschreibung *</label><textarea id="description" maxlength="3000" required placeholder="Was ist defekt? Wann tritt das Problem auf?"></textarea></div>
+<div class="field full"><label for="photo">Foto (optional)</label><input id="photo" type="file" accept="image/*" capture="environment"><p class="muted">Auf Smartphones kannst du – abhängig vom Gerät – Kamera oder Mediathek auswählen. Ohne Foto fortfahren ist möglich.</p><div id="photoPreview"></div></div>
+</div><div class="actions"><button class="btn primary" type="submit">Meldung absenden</button><button class="btn light" type="reset">Zurücksetzen</button><button class="btn light" type="button" data-view="home">Abbrechen</button></div></form><p id="formMessage" role="status"></p></section>
+</section>
+<section id="overviewView" class="hidden">
+<div class="topline"><div><h1>Reparaturübersicht</h1><p class="muted">Fälle suchen, filtern und öffnen.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
+<div class="stats" id="overviewStats"></div><div class="toolbar">
+<input id="search" placeholder="Suche nach Titel, Beschreibung oder Ort …" aria-label="Suche">
+<select id="statusFilter" aria-label="Status filtern"><option value="">Alle Status</option><option>Neu</option><option>Unbearbeitet</option><option>In Bearbeitung</option><option>Erledigt</option></select>
+<select id="priorityFilter" aria-label="Priorität filtern"><option value="">Alle Prioritäten</option><option>Dringend</option><option>Mittel</option><option>Niedrig</option></select>
+<select id="areaFilter" aria-label="Bereich filtern"><option value="">Alle Bereiche</option></select>
+<select id="sortBy" aria-label="Sortierung"><option value="priority">Dringende zuerst</option><option value="newest">Neueste zuerst</option><option value="area">Bereich A–Z</option></select>
+</div><div id="caseList" class="case-list"></div>
+</section>
+<section id="mineView" class="hidden">
+<div class="topline"><div><h1>Meine Meldungen</h1><p class="muted">Fälle, die mit deiner Test-E-Mail-Adresse gemeldet wurden.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
+<div class="field"><label for="myEmail">Deine E-Mail-Adresse</label><input id="myEmail" type="email" placeholder="name@rosengut.de"></div><button class="btn primary" id="showMine">Meine Meldungen anzeigen</button><div id="mineList" class="case-list" style="margin-top:14px"></div>
+</section>
+<section id="adminView" class="hidden">
+<div class="topline"><div><h1>Admin-Bereich</h1><p class="muted">Verwaltung von Reparaturfällen.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
+<div class="notice"><strong>Demo:</strong> Oben kannst du zwischen Testrollen wechseln. In der echten App werden Admin-Rechte serverseitig geprüft.</div><div id="adminContent"></div>
+</section>
+</main><footer>Rosengut · Reparaturmanagement-Prototyp</footer><div id="modalRoot"></div>
+<script>
+const KEY='rosengut-reparatur-prototype-v2', ROLEKEY='rosengut-prototype-role-v1';
+let role=sessionStorage.getItem(ROLEKEY)||'Mitarbeitende', photoData='';
+const $=id=>document.getElementById(id), STATUSES=['Neu','Unbearbeitet','In Bearbeitung','Erledigt'], PRIORITIES=['Niedrig','Mittel','Dringend'], AREAS=['Haus 8','Lager 1','Kasse','Café','Gewächshaus','Außenverkauf','Parkplatz','Büro','Sonstiges'];
+function load(){try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(a)?a:[]}catch{return[]}}
+function save(a){try{localStorage.setItem(KEY,JSON.stringify(a));return true}catch{alert('Lokaler Speicher ist voll. Exportiere oder lösche alte Testfälle.');return false}}
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function dt(s){return s?new Date(s).toLocaleString('de-DE'):'–'}
+function statusClass(s){return({'Neu':'status-neu','Unbearbeitet':'status-unbearbeitet','In Bearbeitung':'status-bearbeitung','Erledigt':'status-erledigt'})[s]||''}
+function user(){return $('reporter').value.trim()||$('myEmail').value.trim()||'test@rosengut.de'}
+function log(f,action,detail=''){f.history=f.history||[];f.history.unshift({time:new Date().toISOString(),user:user(),action,detail});f.lastBy=user();f.lastAt=new Date().toISOString()}
+function view(v){['home','new','overview','mine','admin'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v));if(v==='overview')renderOverview();if(v==='home')renderHome();if(v==='admin')renderAdmin();if(v==='mine')$('myEmail').value=$('reporter').value||$('myEmail').value;window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
+document.querySelectorAll('.tile').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
+function stats(target,items){const c=[['Offen',items.filter(f=>f.status!=='Erledigt').length],['Dringend',items.filter(f=>f.priority==='Dringend'&&f.status!=='Erledigt').length],['In Bearbeitung',items.filter(f=>f.status==='In Bearbeitung').length],['Erledigt',items.filter(f=>f.status==='Erledigt').length]];$(target).innerHTML=c.map(([n,v])=>`<div class="stat"><strong>${v}</strong> ${n}</div>`).join('')}
+function renderHome(){stats('homeStats',load())}
+function setupAreas(){const old=$('areaFilter').value;$('areaFilter').innerHTML='<option value="">Alle Bereiche</option>'+AREAS.map(a=>`<option>${esc(a)}</option>`).join('');$('areaFilter').value=old}
+function filtered(items){const q=$('search').value.trim().toLowerCase(),s=$('statusFilter').value,p=$('priorityFilter').value,a=$('areaFilter').value,sort=$('sortBy').value;items=items.filter(f=>(!q||[f.title,f.description,f.area,f.reporter,f.assignee].join(' ').toLowerCase().includes(q))&&(!s||f.status===s)&&(!p||f.priority===p)&&(!a||f.area===a));items.sort((x,y)=>{if(sort==='area')return x.area.localeCompare(y.area,'de')||new Date(y.createdAt)-new Date(x.createdAt);if(sort==='newest')return new Date(y.createdAt)-new Date(x.createdAt);const r={Dringend:0,Mittel:1,Niedrig:2};return r[x.priority]-r[y.priority]||new Date(y.createdAt)-new Date(x.createdAt)});return items}
+function card(f){return `<article class="case"><div><h3>${esc(f.title)}</h3><div class="tags"><span class="badge ${statusClass(f.status)}">${esc(f.status)}</span><span class="badge prio-${esc(f.priority)}">${esc(f.priority)}</span></div><div class="meta">${esc(f.area)} · Gemeldet ${dt(f.createdAt)} · von ${esc(f.reporter)}</div><p>${esc(f.description).slice(0,190)}${f.description.length>190?'…':''}</p><div class="meta">Bearbeiter: ${esc(f.assignee||'Noch nicht zugewiesen')} · Zuletzt bearbeitet: ${esc(f.lastBy||'–')} (${dt(f.lastAt)})</div></div><div class="case-actions"><button class="btn light small" data-detail="${esc(f.id)}">Details</button>${role==='Admin'?`<button class="btn primary small" data-edit="${esc(f.id)}">Bearbeiten</button>`:''}</div></article>`}
+function renderList(target,items){$(target).innerHTML=items.length?items.map(card).join(''):'<div class="empty">Keine passenden Reparaturfälle gefunden.</div>'}
+function renderOverview(){setupAreas();const c=load();stats('overviewStats',c);renderList('caseList',filtered(c))}
+['search','statusFilter','priorityFilter','areaFilter','sortBy'].forEach(id=>$(id).addEventListener('input',renderOverview));
+$('showMine').addEventListener('click',()=>{const email=$('myEmail').value.trim().toLowerCase();if(!email){$('mineList').innerHTML='<div class="empty">Bitte gib deine E-Mail-Adresse ein.</div>';return}renderList('mineList',load().filter(f=>f.reporter.toLowerCase()===email).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)))});
+$('roleButton').textContent='Testrolle: '+role;
+$('roleButton').addEventListener('click',()=>{role=role==='Admin'?'Mitarbeitende':'Admin';sessionStorage.setItem(ROLEKEY,role);$('roleButton').textContent='Testrolle: '+role;renderOverview();renderAdmin()});
+function renderAdmin(){if(role!=='Admin'){$('adminContent').innerHTML='<div class="empty"><h3>Admin-Ansicht im Prototyp</h3><p>Oben auf „Testrolle: Mitarbeitende“ klicken, um die Demo-Adminrolle einzuschalten.</p><p class="muted">Dies ist kein echter Zugriffsschutz.</p></div>';return}const c=load().filter(f=>f.status!=='Erledigt');renderList('adminContent',c)}
+function readImage(file){return new Promise((resolve,reject)=>{if(!file)return resolve('');if(!file.type.startsWith('image/'))return reject(Error('Bitte eine Bilddatei auswählen.'));if(file.size>12*1024*1024)return reject(Error('Das Foto darf maximal 12 MB groß sein.'));const r=new FileReader();r.onerror=()=>reject(Error('Foto konnte nicht gelesen werden.'));r.onload=()=>{const img=new Image();img.onerror=()=>reject(Error('Ungültige Bilddatei.'));img.onload=()=>{const scale=Math.min(1,1200/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.72))};img.src=r.result};r.readAsDataURL(file)})}
+$('photo').addEventListener('change',async()=>{photoData='';$('photoPreview').replaceChildren();if(!$('photo').files[0])return;try{photoData=await readImage($('photo').files[0]);const im=document.createElement('img');im.className='photo';im.alt='Fotovorschau';im.src=photoData;$('photoPreview').append(im)}catch(e){$('formMessage').textContent=e.message;$('photo').value=''}});
+$('caseForm').addEventListener('reset',()=>{photoData='';$('photoPreview').replaceChildren();$('formMessage').textContent=''});
+$('caseForm').addEventListener('submit',async e=>{e.preventDefault();const button=$('caseForm').querySelector('[type=submit]');button.disabled=true;try{const reporter=$('reporter').value.trim(),title=$('title').value.trim(),area=$('area').value,description=$('description').value.trim(),priority=$('priority').value;if(!reporter||!title||!area||!description)throw Error('Bitte fülle alle Pflichtfelder aus.');let photo=photoData;if($('photo').files[0]&&!photo)photo=await readImage($('photo').files[0]);const f={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title,area,description,priority,status:'Neu',reporter,assignee:'',createdAt:new Date().toISOString(),lastBy:'',lastAt:'',completedBy:'',completedAt:'',photo,notes:[],history:[]};f.history.push({time:f.createdAt,user:reporter,action:'Fall erstellt',detail:'Status: Neu'});const all=load();all.unshift(f);if(save(all)){$('caseForm').reset();$('formMessage').textContent='Meldung erfolgreich erstellt.';renderHome();view('overview')}}catch(err){$('formMessage').textContent=err.message||'Fehler beim Erstellen.'}finally{button.disabled=false}});
+document.addEventListener('click',e=>{const d=e.target.closest('[data-detail]'),ed=e.target.closest('[data-edit]');if(d)openDetail(d.dataset.detail,false);if(ed)openDetail(ed.dataset.edit,true)});
+function openDetail(id,forceEdit=false){const f=load().find(x=>x.id===id);if(!f)return;const admin=role==='Admin';const root=$('modalRoot');root.innerHTML=`<div class="modal-backdrop" id="backdrop"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>${esc(f.title)}</h2><div class="tags"><span class="badge ${statusClass(f.status)}">${esc(f.status)}</span><span class="badge prio-${esc(f.priority)}">${esc(f.priority)}</span></div></div><button class="btn light small" id="closeModal">Schließen ✕</button></div><div class="detail-grid"><div class="detail-item"><small>Bereich</small><strong>${esc(f.area)}</strong></div><div class="detail-item"><small>Gemeldet von / am</small><strong>${esc(f.reporter)}<br>${dt(f.createdAt)}</strong></div><div class="detail-item"><small>Bearbeiter</small><strong>${esc(f.assignee||'Noch nicht zugewiesen')}</strong></div><div class="detail-item"><small>Zuletzt bearbeitet</small><strong>${esc(f.lastBy||'–')}<br>${dt(f.lastAt)}</strong></div>${f.completedAt?`<div class="detail-item"><small>Erledigt von / am</small><strong>${esc(f.completedBy)}<br>${dt(f.completedAt)}</strong></div>`:''}</div><h3>Beschreibung</h3><p>${esc(f.description)}</p>${f.photo?`<img class="photo" src="${f.photo}" alt="Foto zum Fall">`:''}${admin?`<hr><h3>Fall bearbeiten</h3><div class="form-grid"><div class="field"><label for="editStatus">Status</label><select id="editStatus">${STATUSES.map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field"><label for="editPriority">Priorität</label><select id="editPriority">${PRIORITIES.map(s=>`<option ${f.priority===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field full"><label for="editAssignee">Bearbeiter (Name oder E-Mail)</label><input id="editAssignee" value="${esc(f.assignee)}"></div><div class="field full"><label for="editNote">Neue Notiz</label><textarea id="editNote" placeholder="z. B. Ersatzteil bestellt …"></textarea></div></div><div class="actions"><button class="btn primary" id="saveEdit">Änderungen speichern</button>${f.status!=='Erledigt'?'<button class="btn primary" id="markDone">Als erledigt markieren</button>':''}<button class="btn danger" id="deleteCase">Endgültig löschen</button></div>`:''}<hr><h3>Notizen</h3>${(f.notes||[]).length?f.notes.map(n=>`<div class="detail-item" style="margin:8px 0"><p>${esc(n.text)}</p><small>${esc(n.user)} · ${dt(n.time)}</small></div>`).join(''):'<p class="muted">Noch keine Notizen.</p>'}<h3 style="margin-top:18px">Verlauf</h3>${(f.history||[]).length?f.history.map(l=>`<div class="log"><strong>${esc(l.action)}</strong><div>${esc(l.detail||'')}</div><div class="meta">${esc(l.user)} · ${dt(l.time)}</div></div>`).join(''):'<p class="muted">Noch kein Verlauf vorhanden.</p>'}</section></div>`;
+$('closeModal').onclick=()=>root.replaceChildren();$('backdrop').onclick=e=>{if(e.target.id==='backdrop')root.replaceChildren()};
+if(admin){$('saveEdit').onclick=()=>{const all=load(),item=all.find(x=>x.id===id);if(!item)return;const ns=$('editStatus').value,np=$('editPriority').value,na=$('editAssignee').value.trim(),note=$('editNote').value.trim(),changes=[];if(item.status!==ns){changes.push(`Status: ${item.status} → ${ns}`);item.status=ns}if(item.priority!==np){changes.push(`Priorität: ${item.priority} → ${np}`);item.priority=np}if((item.assignee||'')!==na){changes.push(`Bearbeiter: ${item.assignee||'–'} → ${na||'–'}`);item.assignee=na}if(note){item.notes=item.notes||[];item.notes.unshift({text:note,user:user(),time:new Date().toISOString()});changes.push('Notiz ergänzt')}if(!changes.length){alert('Keine Änderungen vorgenommen.');return}if(item.status==='Erledigt'&&!item.completedAt){item.completedAt=new Date().toISOString();item.completedBy=user()}if(item.status!=='Erledigt'){item.completedAt='';item.completedBy=''}item.history=item.history||[];log(item,'Fall aktualisiert',changes.join(' | '));if(save(all)){root.replaceChildren();renderOverview();renderAdmin();renderHome()}};$('markDone')?.addEventListener('click',()=>{const all=load(),item=all.find(x=>x.id===id);item.status='Erledigt';item.completedAt=new Date().toISOString();item.completedBy=user();log(item,'Fall erledigt','Status auf Erledigt gesetzt');if(save(all)){root.replaceChildren();renderOverview();renderAdmin();renderHome()}});$('deleteCase').onclick=()=>{if(!confirm('Diesen Fall endgültig aus dem lokalen Test speichern löschen?'))return;save(load().filter(x=>x.id!==id));root.replaceChildren();renderOverview();renderAdmin();renderHome()}}}
+renderHome();
+</script>
 </body>
 </html>
