@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang='de'>
+<head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Anmeldetest</title></head>
+<body>
+<h1>Anmeldetest</h1>
+<pre id='out'>Lade …</pre>
+<script src='msal-browser.min.js'></script>
+<script>
+const CFG = {
+  clientId: 'DEINE-CLIENT-ID',
+  tenantId: 'DEINE-MANDANTEN-ID',
+  siteHost: 'deinefirma.sharepoint.com',
+  sitePath: '/sites/Reparaturen'
+};
+const SCOPES = ['User.Read', 'Sites.Read.All'];
+const out = document.getElementById('out');
+(async () => {
+  const app = new msal.PublicClientApplication({
+    auth: {
+      clientId: CFG.clientId,
+      authority: 'https://login.microsoftonline.com/' + CFG.tenantId,
+      redirectUri: location.origin + location.pathname
+    },
+    cache: { cacheLocation: 'localStorage' }
+  });
+  await app.initialize();
+  const r = await app.handleRedirectPromise();
+  const acc = (r && r.account) || app.getAllAccounts()[0];
+  if (!acc) { await app.loginRedirect({ scopes: SCOPES }); return; }
+  let tok;
+  try { tok = await app.acquireTokenSilent({ scopes: SCOPES, account: acc }); }
+  catch (e) { await app.acquireTokenRedirect({ scopes: SCOPES, account: acc }); return; }
+  const g = async (u) => {
+    const x = await fetch('https://graph.microsoft.com/v1.0' + u, { headers: { Authorization: 'Bearer ' + tok.accessToken } });
+    return x.json();
+  };
+  const me = await g('/me');
+  const site = await g('/sites/' + CFG.siteHost + ':' + CFG.sitePath);
+  const lists = site.id ? await g('/sites/' + site.id + '/lists?$select=displayName') : null;
+  out.textContent = JSON.stringify({
+    angemeldet: me.displayName || me.error,
+    mail: me.mail,
+    website: site.displayName || site.error,
+    listen: lists && lists.value ? lists.value.map(l => l.displayName) : lists
+  }, null, 2);
+})().catch(e => { out.textContent = 'Fehler: ' + e.message; });
+</script>
+</body>
+</html>
