@@ -27,9 +27,9 @@ input,textarea,select{width:100%;padding:11px 12px;border:1px solid #bac5bc;bord
 </style>
 </head>
 <body>
-<header><div class="header-inner"><div><div class="brand">Rosengut · Reparaturmanagement</div><div class="brand-sub">Melden. Bearbeiten. Erledigen.</div></div><button class="btn light small" id="roleButton">Testrolle: Mitarbeitende</button></div></header>
+<header><div class="header-inner"><div><div class="brand">Rosengut · Reparaturmanagement</div><div class="brand-sub">Melden. Bearbeiten. Erledigen.</div></div><span class="brand-sub" id="signedInUser">Google-Anmeldung wird geprüft …</span></div></header>
 <main>
-<div class="notice"><strong>Prototyp / Testmodus:</strong> Daten werden nur lokal in diesem Browser gespeichert. Es gibt noch keine echte Anmeldung oder zentrale Datenbank. Die Testrolle ist kein echter Passwortschutz. Bitte keine vertraulichen Daten eingeben.</div>
+<div class="notice"><strong>Interner Testbetrieb:</strong> Meldungen werden mit Google Tabellen synchronisiert; Fotos werden im hinterlegten Drive-Ordner gespeichert. Zugriff und Adminrechte müssen in der Apps-Script-Bereitstellung sowie im Tabellenblatt „Admins“ korrekt eingerichtet sein.</div>
 <section id="homeView">
 <div class="topline"><div><h1>Willkommen</h1><p class="muted">Was möchtest du tun?</p></div></div>
 <div class="grid">
@@ -67,19 +67,31 @@ input,textarea,select{width:100%;padding:11px 12px;border:1px solid #bac5bc;bord
 </section>
 <section id="adminView" class="hidden">
 <div class="topline"><div><h1>Admin-Bereich</h1><p class="muted">Verwaltung von Reparaturfällen.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
-<div class="notice"><strong>Demo:</strong> Oben kannst du zwischen Testrollen wechseln. In der echten App werden Admin-Rechte serverseitig geprüft.</div><div id="adminContent"></div>
+<div class="notice"><strong>Admin-Bereich:</strong> Änderungen an Status, Priorität, Zuweisung und Löschen werden serverseitig anhand des Tabellenblatts „Admins“ geprüft.</div><div id="adminContent"></div>
 </section>
-</main><footer>Rosengut · Reparaturmanagement-Prototyp</footer><div id="modalRoot"></div>
+</main><footer>Rosengut · Reparaturmanagement</footer><div id="modalRoot"></div>
 <script>
-const KEY='rosengut-reparatur-prototype-v2', ROLEKEY='rosengut-prototype-role-v1';
-let role=sessionStorage.getItem(ROLEKEY)||'Mitarbeitende', photoData='';
+const KEY='rosengut-reparatur-connected-v1';
+let role='Mitarbeitende', photoData='', signedInEmail='', serverReady=false, saveTimer=null;
 const $=id=>document.getElementById(id), STATUSES=['Neu','Unbearbeitet','In Bearbeitung','Erledigt'], PRIORITIES=['Niedrig','Mittel','Dringend'], AREAS=['Haus 8','Lager 1','Kasse','Café','Gewächshaus','Außenverkauf','Parkplatz','Büro','Sonstiges'];
 function load(){try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(a)?a:[]}catch{return[]}}
-function save(a){try{localStorage.setItem(KEY,JSON.stringify(a));return true}catch{alert('Lokaler Speicher ist voll. Exportiere oder lösche alte Testfälle.');return false}}
+function save(a){
+  try { localStorage.setItem(KEY, JSON.stringify(a)); } catch(e) { alert('Lokaler Zwischenspeicher ist voll.'); return false; }
+  if (!serverReady || !window.google || !google.script || !google.script.run) {
+    alert('Keine Verbindung zum Apps-Script-Backend. Bitte die App über die Apps-Script-Web-App öffnen.');
+    return false;
+  }
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>google.script.run
+    .withFailureHandler(err=>alert('Synchronisierung fehlgeschlagen: '+(err && err.message ? err.message : err)))
+    .withSuccessHandler(()=>{ /* server confirmed */ })
+    .saveAllCases(a), 150);
+  return true;
+}
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function dt(s){return s?new Date(s).toLocaleString('de-DE'):'–'}
 function statusClass(s){return({'Neu':'status-neu','Unbearbeitet':'status-unbearbeitet','In Bearbeitung':'status-bearbeitung','Erledigt':'status-erledigt'})[s]||''}
-function user(){return $('reporter').value.trim()||$('myEmail').value.trim()||'test@rosengut.de'}
+function user(){return signedInEmail||$('reporter').value.trim()||$('myEmail').value.trim()||'unbekannt'}
 function log(f,action,detail=''){f.history=f.history||[];f.history.unshift({time:new Date().toISOString(),user:user(),action,detail});f.lastBy=user();f.lastAt=new Date().toISOString()}
 function view(v){['home','new','overview','mine','admin'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v));if(v==='overview')renderOverview();if(v==='home')renderHome();if(v==='admin')renderAdmin();if(v==='mine')$('myEmail').value=$('reporter').value||$('myEmail').value;window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
@@ -93,18 +105,47 @@ function renderList(target,items){$(target).innerHTML=items.length?items.map(car
 function renderOverview(){setupAreas();const c=load();stats('overviewStats',c);renderList('caseList',filtered(c))}
 ['search','statusFilter','priorityFilter','areaFilter','sortBy'].forEach(id=>$(id).addEventListener('input',renderOverview));
 $('showMine').addEventListener('click',()=>{const email=$('myEmail').value.trim().toLowerCase();if(!email){$('mineList').innerHTML='<div class="empty">Bitte gib deine E-Mail-Adresse ein.</div>';return}renderList('mineList',load().filter(f=>f.reporter.toLowerCase()===email).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)))});
-$('roleButton').textContent='Testrolle: '+role;
-$('roleButton').addEventListener('click',()=>{role=role==='Admin'?'Mitarbeitende':'Admin';sessionStorage.setItem(ROLEKEY,role);$('roleButton').textContent='Testrolle: '+role;renderOverview();renderAdmin()});
-function renderAdmin(){if(role!=='Admin'){$('adminContent').innerHTML='<div class="empty"><h3>Admin-Ansicht im Prototyp</h3><p>Oben auf „Testrolle: Mitarbeitende“ klicken, um die Demo-Adminrolle einzuschalten.</p><p class="muted">Dies ist kein echter Zugriffsschutz.</p></div>';return}const c=load().filter(f=>f.status!=='Erledigt');renderList('adminContent',c)}
+function initConnectedApp(){
+  if (!window.google || !google.script || !google.script.run) {
+    $('signedInUser').textContent='Bitte über die Apps-Script-Web-App öffnen';
+    $('formMessage').textContent='Diese Version muss über die bereitgestellte Apps-Script-Web-App geöffnet werden.';
+    serverReady=false; return;
+  }
+  google.script.run
+    .withFailureHandler(err=>{
+      $('signedInUser').textContent='Anmeldung/Verbindung fehlgeschlagen';
+      alert('Backend nicht erreichbar: '+(err && err.message ? err.message : err));
+    })
+    .withSuccessHandler(data=>{
+      signedInEmail=data.email||'';
+      role=data.isAdmin?'Admin':'Mitarbeitende';
+      $('signedInUser').textContent=(signedInEmail||'Google-Konto')+' · '+role;
+      serverReady=true;
+      localStorage.setItem(KEY,JSON.stringify(data.cases||[]));
+      renderHome(); renderOverview(); renderAdmin();
+    }).getInitialData();
+}
+function renderAdmin(){if(role!=='Admin'){$('adminContent').innerHTML='<div class="empty"><h3>Kein Admin-Zugriff</h3><p>Dein Google-Konto ist im Tabellenblatt „Admins“ nicht als aktiver Admin eingetragen.</p></div>';return}const c=load().filter(f=>f.status!=='Erledigt');renderList('adminContent',c)}
 function readImage(file){return new Promise((resolve,reject)=>{if(!file)return resolve('');if(!file.type.startsWith('image/'))return reject(Error('Bitte eine Bilddatei auswählen.'));if(file.size>12*1024*1024)return reject(Error('Das Foto darf maximal 12 MB groß sein.'));const r=new FileReader();r.onerror=()=>reject(Error('Foto konnte nicht gelesen werden.'));r.onload=()=>{const img=new Image();img.onerror=()=>reject(Error('Ungültige Bilddatei.'));img.onload=()=>{const scale=Math.min(1,1200/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.72))};img.src=r.result};r.readAsDataURL(file)})}
 $('photo').addEventListener('change',async()=>{photoData='';$('photoPreview').replaceChildren();if(!$('photo').files[0])return;try{photoData=await readImage($('photo').files[0]);const im=document.createElement('img');im.className='photo';im.alt='Fotovorschau';im.src=photoData;$('photoPreview').append(im)}catch(e){$('formMessage').textContent=e.message;$('photo').value=''}});
 $('caseForm').addEventListener('reset',()=>{photoData='';$('photoPreview').replaceChildren();$('formMessage').textContent=''});
-$('caseForm').addEventListener('submit',async e=>{e.preventDefault();const button=$('caseForm').querySelector('[type=submit]');button.disabled=true;try{const reporter=$('reporter').value.trim(),title=$('title').value.trim(),area=$('area').value,description=$('description').value.trim(),priority=$('priority').value;if(!reporter||!title||!area||!description)throw Error('Bitte fülle alle Pflichtfelder aus.');let photo=photoData;if($('photo').files[0]&&!photo)photo=await readImage($('photo').files[0]);const f={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title,area,description,priority,status:'Neu',reporter,assignee:'',createdAt:new Date().toISOString(),lastBy:'',lastAt:'',completedBy:'',completedAt:'',photo,notes:[],history:[]};f.history.push({time:f.createdAt,user:reporter,action:'Fall erstellt',detail:'Status: Neu'});const all=load();all.unshift(f);if(save(all)){$('caseForm').reset();$('formMessage').textContent='Meldung erfolgreich erstellt.';renderHome();view('overview')}}catch(err){$('formMessage').textContent=err.message||'Fehler beim Erstellen.'}finally{button.disabled=false}});
+$('caseForm').addEventListener('submit',async e=>{e.preventDefault();const button=$('caseForm').querySelector('[type=submit]');button.disabled=true;try{const reporter=$('reporter').value.trim(),title=$('title').value.trim(),area=$('area').value,description=$('description').value.trim(),priority=$('priority').value;if(!reporter||!title||!area||!description)throw Error('Bitte fülle alle Pflichtfelder aus.');let photo=photoData;if($('photo').files[0]&&!photo)photo=await readImage($('photo').files[0]);const createRecord=(photoRef)=>{
+  const f={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title,area,description,priority,status:'Neu',reporter:signedInEmail||reporter,assignee:'',createdAt:new Date().toISOString(),lastBy:'',lastAt:'',completedBy:'',completedAt:'',photo:photoRef||'',notes:[],history:[]};
+  f.history.push({time:f.createdAt,user:f.reporter,action:'Fall erstellt',detail:'Status: Neu'});
+  const all=load();all.unshift(f);
+  if(save(all)){$('caseForm').reset();$('formMessage').textContent='Meldung wurde zur Synchronisierung übergeben.';renderHome();view('overview')}
+};
+if(photo && window.google && google.script && google.script.run){
+  google.script.run.withFailureHandler(err=>{throw Error('Foto-Upload fehlgeschlagen: '+(err && err.message ? err.message : err))})
+    .withSuccessHandler(fileId=>createRecord(fileId))
+    .savePhoto(photo, title.replace(/[^a-z0-9_-]/gi,'_')+'.jpg');
+} else createRecord('');}catch(err){$('formMessage').textContent=err.message||'Fehler beim Erstellen.'}finally{button.disabled=false}});
 document.addEventListener('click',e=>{const d=e.target.closest('[data-detail]'),ed=e.target.closest('[data-edit]');if(d)openDetail(d.dataset.detail,false);if(ed)openDetail(ed.dataset.edit,true)});
-function openDetail(id,forceEdit=false){const f=load().find(x=>x.id===id);if(!f)return;const admin=role==='Admin';const root=$('modalRoot');root.innerHTML=`<div class="modal-backdrop" id="backdrop"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>${esc(f.title)}</h2><div class="tags"><span class="badge ${statusClass(f.status)}">${esc(f.status)}</span><span class="badge prio-${esc(f.priority)}">${esc(f.priority)}</span></div></div><button class="btn light small" id="closeModal">Schließen ✕</button></div><div class="detail-grid"><div class="detail-item"><small>Bereich</small><strong>${esc(f.area)}</strong></div><div class="detail-item"><small>Gemeldet von / am</small><strong>${esc(f.reporter)}<br>${dt(f.createdAt)}</strong></div><div class="detail-item"><small>Bearbeiter</small><strong>${esc(f.assignee||'Noch nicht zugewiesen')}</strong></div><div class="detail-item"><small>Zuletzt bearbeitet</small><strong>${esc(f.lastBy||'–')}<br>${dt(f.lastAt)}</strong></div>${f.completedAt?`<div class="detail-item"><small>Erledigt von / am</small><strong>${esc(f.completedBy)}<br>${dt(f.completedAt)}</strong></div>`:''}</div><h3>Beschreibung</h3><p>${esc(f.description)}</p>${f.photo?`<img class="photo" src="${f.photo}" alt="Foto zum Fall">`:''}${admin?`<hr><h3>Fall bearbeiten</h3><div class="form-grid"><div class="field"><label for="editStatus">Status</label><select id="editStatus">${STATUSES.map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field"><label for="editPriority">Priorität</label><select id="editPriority">${PRIORITIES.map(s=>`<option ${f.priority===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field full"><label for="editAssignee">Bearbeiter (Name oder E-Mail)</label><input id="editAssignee" value="${esc(f.assignee)}"></div><div class="field full"><label for="editNote">Neue Notiz</label><textarea id="editNote" placeholder="z. B. Ersatzteil bestellt …"></textarea></div></div><div class="actions"><button class="btn primary" id="saveEdit">Änderungen speichern</button>${f.status!=='Erledigt'?'<button class="btn primary" id="markDone">Als erledigt markieren</button>':''}<button class="btn danger" id="deleteCase">Endgültig löschen</button></div>`:''}<hr><h3>Notizen</h3>${(f.notes||[]).length?f.notes.map(n=>`<div class="detail-item" style="margin:8px 0"><p>${esc(n.text)}</p><small>${esc(n.user)} · ${dt(n.time)}</small></div>`).join(''):'<p class="muted">Noch keine Notizen.</p>'}<h3 style="margin-top:18px">Verlauf</h3>${(f.history||[]).length?f.history.map(l=>`<div class="log"><strong>${esc(l.action)}</strong><div>${esc(l.detail||'')}</div><div class="meta">${esc(l.user)} · ${dt(l.time)}</div></div>`).join(''):'<p class="muted">Noch kein Verlauf vorhanden.</p>'}</section></div>`;
+function openDetail(id,forceEdit=false){const f=load().find(x=>x.id===id);if(!f)return;const admin=role==='Admin';const root=$('modalRoot');root.innerHTML=`<div class="modal-backdrop" id="backdrop"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>${esc(f.title)}</h2><div class="tags"><span class="badge ${statusClass(f.status)}">${esc(f.status)}</span><span class="badge prio-${esc(f.priority)}">${esc(f.priority)}</span></div></div><button class="btn light small" id="closeModal">Schließen ✕</button></div><div class="detail-grid"><div class="detail-item"><small>Bereich</small><strong>${esc(f.area)}</strong></div><div class="detail-item"><small>Gemeldet von / am</small><strong>${esc(f.reporter)}<br>${dt(f.createdAt)}</strong></div><div class="detail-item"><small>Bearbeiter</small><strong>${esc(f.assignee||'Noch nicht zugewiesen')}</strong></div><div class="detail-item"><small>Zuletzt bearbeitet</small><strong>${esc(f.lastBy||'–')}<br>${dt(f.lastAt)}</strong></div>${f.completedAt?`<div class="detail-item"><small>Erledigt von / am</small><strong>${esc(f.completedBy)}<br>${dt(f.completedAt)}</strong></div>`:''}</div><h3>Beschreibung</h3><p>${esc(f.description)}</p>${f.photo?`<img class="photo" src="https://drive.google.com/uc?export=view&id=${encodeURIComponent(f.photo)}" alt="Foto zum Fall">`:''}${admin?`<hr><h3>Fall bearbeiten</h3><div class="form-grid"><div class="field"><label for="editStatus">Status</label><select id="editStatus">${STATUSES.map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field"><label for="editPriority">Priorität</label><select id="editPriority">${PRIORITIES.map(s=>`<option ${f.priority===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field full"><label for="editAssignee">Bearbeiter (Name oder E-Mail)</label><input id="editAssignee" value="${esc(f.assignee)}"></div><div class="field full"><label for="editNote">Neue Notiz</label><textarea id="editNote" placeholder="z. B. Ersatzteil bestellt …"></textarea></div></div><div class="actions"><button class="btn primary" id="saveEdit">Änderungen speichern</button>${f.status!=='Erledigt'?'<button class="btn primary" id="markDone">Als erledigt markieren</button>':''}<button class="btn danger" id="deleteCase">Endgültig löschen</button></div>`:''}<hr><h3>Notizen</h3>${(f.notes||[]).length?f.notes.map(n=>`<div class="detail-item" style="margin:8px 0"><p>${esc(n.text)}</p><small>${esc(n.user)} · ${dt(n.time)}</small></div>`).join(''):'<p class="muted">Noch keine Notizen.</p>'}<h3 style="margin-top:18px">Verlauf</h3>${(f.history||[]).length?f.history.map(l=>`<div class="log"><strong>${esc(l.action)}</strong><div>${esc(l.detail||'')}</div><div class="meta">${esc(l.user)} · ${dt(l.time)}</div></div>`).join(''):'<p class="muted">Noch kein Verlauf vorhanden.</p>'}</section></div>`;
 $('closeModal').onclick=()=>root.replaceChildren();$('backdrop').onclick=e=>{if(e.target.id==='backdrop')root.replaceChildren()};
 if(admin){$('saveEdit').onclick=()=>{const all=load(),item=all.find(x=>x.id===id);if(!item)return;const ns=$('editStatus').value,np=$('editPriority').value,na=$('editAssignee').value.trim(),note=$('editNote').value.trim(),changes=[];if(item.status!==ns){changes.push(`Status: ${item.status} → ${ns}`);item.status=ns}if(item.priority!==np){changes.push(`Priorität: ${item.priority} → ${np}`);item.priority=np}if((item.assignee||'')!==na){changes.push(`Bearbeiter: ${item.assignee||'–'} → ${na||'–'}`);item.assignee=na}if(note){item.notes=item.notes||[];item.notes.unshift({text:note,user:user(),time:new Date().toISOString()});changes.push('Notiz ergänzt')}if(!changes.length){alert('Keine Änderungen vorgenommen.');return}if(item.status==='Erledigt'&&!item.completedAt){item.completedAt=new Date().toISOString();item.completedBy=user()}if(item.status!=='Erledigt'){item.completedAt='';item.completedBy=''}item.history=item.history||[];log(item,'Fall aktualisiert',changes.join(' | '));if(save(all)){root.replaceChildren();renderOverview();renderAdmin();renderHome()}};$('markDone')?.addEventListener('click',()=>{const all=load(),item=all.find(x=>x.id===id);item.status='Erledigt';item.completedAt=new Date().toISOString();item.completedBy=user();log(item,'Fall erledigt','Status auf Erledigt gesetzt');if(save(all)){root.replaceChildren();renderOverview();renderAdmin();renderHome()}});$('deleteCase').onclick=()=>{if(!confirm('Diesen Fall endgültig aus dem lokalen Test speichern löschen?'))return;save(load().filter(x=>x.id!==id));root.replaceChildren();renderOverview();renderAdmin();renderHome()}}}
 renderHome();
+initConnectedApp();
 </script>
 </body>
 </html>
