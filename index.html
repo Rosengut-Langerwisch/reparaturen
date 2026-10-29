@@ -12,7 +12,7 @@ const CFG = {
   siteHost: 'rosengutde.sharepoint.com',
   sitePath: '/sites/Reparaturen'
 };
-const SCOPES = ['User.Read', 'Sites.Read.All'];
+const SCOPES = ['User.Read', 'Sites.Selected'];
 const out = document.getElementById('out');
 (async () => {
   const app = new msal.PublicClientApplication({
