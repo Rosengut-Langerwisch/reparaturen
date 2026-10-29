@@ -2,97 +2,498 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Reparaturmeldungen – Anmeldetest</title>
-</head>
-<body>
-  <h1>Reparaturmeldungen</h1>
-  <pre id="out">Microsoft-Anmeldung wird vorbereitet …</pre>
-
-  <script src="msal-browser.min.js"></script>
-  <script>
-    const CFG = {
-      clientId: '0fb63a5b-1b13-4e0a-8557-2539b2b96258',
-      tenantId: 'a1401f5e-c83f-4acf-adcb-93291e8b26aa'
-    };
-
-    // Nur die grundlegende Anmeldung, keine SharePoint-Rechte.
-    const SCOPES = ['User.Read'];
-    const out = document.getElementById('out');
-
-    async function starten() {
-      const app = new msal.PublicClientApplication({
-        auth: {
-          clientId: CFG.clientId,
-          authority:
-            'https://login.microsoftonline.com/' + CFG.tenantId,
-          redirectUri: location.origin + location.pathname
-        },
-        cache: {
-          cacheLocation: 'localStorage'
-        }
-      });
-
-      await app.initialize();
-
-      const result = await app.handleRedirectPromise();
-      const account =
-        (result && result.account) || app.getAllAccounts()[0];
-
-      if (!account) {
-        out.textContent = 'Weiterleitung zur Microsoft-Anmeldung …';
-        await app.loginRedirect({ scopes: SCOPES });
-        return;
-      }
-
-      let token;
-
-      try {
-        token = await app.acquireTokenSilent({
-          scopes: SCOPES,
-          account
-        });
-      } catch (e) {
-        out.textContent = 'Microsoft-Anmeldung wird fortgesetzt …';
-        await app.acquireTokenRedirect({
-          scopes: SCOPES,
-          account
-        });
-        return;
-      }
-
-      const response = await fetch(
-        'https://graph.microsoft.com/v1.0/me',
-        {
-          headers: {
-            Authorization: 'Bearer ' + token.accessToken
-          }
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error?.message || 'Benutzerabfrage fehlgeschlagen.'
-        );
-      }
-
-      out.textContent =
-        'Anmeldung erfolgreich!\n\n' +
-        'Name: ' + (data.displayName || 'Nicht verfügbar') + '\n' +
-        'E-Mail: ' + (data.mail || data.userPrincipalName || 'Nicht verfügbar') +
-        '\n\nDer nächste Schritt ist die Verbindung zu Google Sheets.';
+  <title>Rosengut – Reparaturmeldungen</title>
+  <style>
+    :root {
+      --gruen: #006338;
+      --hintergrund: #f5f7f5;
+      --rand: #d8ded9;
     }
 
-    starten().catch(error => {
-      out.textContent =
-        'Anmeldung fehlgeschlagen:\n' +
-        error.message +
-        '\n\nFalls eine Administratorgenehmigung verlangt wird, ' +
-        'muss möglicherweise eure IT die Anmeldung freigeben.';
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--hintergrund);
+      color: #252925;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--gruen);
+      color: white;
+      padding: 22px 20px;
+    }
+
+    header div, main {
+      max-width: 850px;
+      margin: auto;
+    }
+
+    header h1 { margin: 0; font-size: 25px; }
+    header p { margin: 4px 0 0; }
+
+    main { padding: 24px 16px 50px; }
+
+    .hinweis {
+      background: #fff7df;
+      border: 1px solid #e8d9a7;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .karte {
+      background: white;
+      border: 1px solid var(--rand);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 22px;
+    }
+
+    h2 { margin: 0 0 16px; font-size: 20px; }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 15px 0 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #aeb8b0;
+      border-radius: 6px;
+      font: inherit;
+      background: white;
+    }
+
+    textarea { min-height: 105px; resize: vertical; }
+
+    input:focus, textarea:focus, select:focus {
+      outline: 2px solid #78aa91;
+      outline-offset: 1px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .primaer {
+      background: var(--gruen);
+      color: white;
+    }
+
+    .sekundaer {
+      background: #edf1ed;
+      color: #26352a;
+    }
+
+    .loeschen {
+      background: #fbe9e7;
+      color: #8c2118;
+    }
+
+    .aktionen {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .fall {
+      border: 1px solid var(--rand);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+      background: white;
+    }
+
+    .fall h3 { margin: 0 0 8px; }
+    .meta { color: #5a625c; font-size: 14px; }
+    .beschreibung { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+    .marke {
+      display: inline-block;
+      background: #edf1ed;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin: 2px 4px 8px 0;
+    }
+
+    .foto {
+      display: block;
+      max-width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      margin-top: 12px;
+      border-radius: 6px;
+    }
+
+    .leer { color: #646b65; }
+
+    footer {
+      color: #646b65;
+      font-size: 12px;
+      text-align: center;
+      padding: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Reparaturmeldungen</h1>
+      <p>Probleme melden. Lösungen anstoßen.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="hinweis">
+      <strong>Testmodus:</strong> Die Meldungen werden nur in diesem
+      Browser gespeichert. Andere Mitarbeitende sehen sie nicht.
+      Bitte keine vertraulichen Informationen oder echten Fotos
+      mit sensiblen Inhalten verwenden.
+    </div>
+
+    <section class="karte">
+      <h2>Neue Reparatur melden</h2>
+
+      <form id="formular">
+        <label for="email">Deine E-Mail-Adresse</label>
+        <input
+          id="email"
+          type="email"
+          placeholder="name@rosengut.de"
+          required
+        >
+
+        <label for="titel">Was ist kaputt?</label>
+        <input
+          id="titel"
+          type="text"
+          maxlength="120"
+          placeholder="z. B. Einkaufswagen defekt"
+          required
+        >
+
+        <label for="beschreibung">Beschreibung</label>
+        <textarea
+          id="beschreibung"
+          maxlength="3000"
+          placeholder="Was ist passiert? Was funktioniert nicht?"
+          required
+        ></textarea>
+
+        <label for="ort">Ort</label>
+        <input
+          id="ort"
+          type="text"
+          maxlength="200"
+          placeholder="z. B. Gewächshaus 3"
+          required
+        >
+
+        <label for="prioritaet">Priorität</label>
+        <select id="prioritaet" required>
+          <option value="Niedrig">Niedrig – nicht dringend</option>
+          <option value="Normal" selected>Normal – regulär beheben</option>
+          <option value="Hoch">Hoch – zeitnah prüfen</option>
+          <option value="Kritisch">Kritisch – sofort prüfen</option>
+        </select>
+
+        <label for="foto">Foto (optional)</label>
+        <input id="foto" type="file" accept="image/*">
+        <p class="meta">Bilder werden für den Test verkleinert.</p>
+        <div id="fotovorschau"></div>
+
+        <div class="aktionen">
+          <button class="primaer" type="submit">Meldung erstellen</button>
+          <button class="sekundaer" type="reset">Zurücksetzen</button>
+        </div>
+      </form>
+
+      <p id="meldung" aria-live="polite"></p>
+    </section>
+
+    <section>
+      <h2>Meine Testmeldungen</h2>
+      <p class="meta">Die neuesten Meldungen stehen oben.</p>
+      <div id="faelle"></div>
+      <div class="aktionen">
+        <button id="export" class="sekundaer" type="button">
+          Meldungen exportieren (JSON)
+        </button>
+        <button id="alleLoeschen" class="loeschen" type="button">
+          Alle Testmeldungen löschen
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <footer>Rosengut · Interner Prototyp</footer>
+
+  <script>
+    const SPEICHER = 'rosengut-reparatur-test-v1';
+    const formular = document.getElementById('formular');
+    const fotoFeld = document.getElementById('foto');
+    const vorschau = document.getElementById('fotovorschau');
+    const meldung = document.getElementById('meldung');
+    let fotoDaten = '';
+
+    function laden() {
+      try {
+        const daten = JSON.parse(localStorage.getItem(SPEICHER) || '[]');
+        return Array.isArray(daten) ? daten : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function speichern(faelle) {
+      try {
+        localStorage.setItem(SPEICHER, JSON.stringify(faelle));
+        return true;
+      } catch {
+        meldung.textContent =
+          'Speichern fehlgeschlagen. Möglicherweise ist der lokale Speicher voll.';
+        return false;
+      }
+    }
+
+    function sichereText(element, text) {
+      element.textContent = text || '';
+    }
+
+    function bildLesen(datei) {
+      return new Promise((resolve, reject) => {
+        if (!datei) return resolve('');
+
+        if (!datei.type.startsWith('image/')) {
+          return reject(new Error('Bitte eine Bilddatei auswählen.'));
+        }
+
+        if (datei.size > 12 * 1024 * 1024) {
+          return reject(new Error('Das Foto darf höchstens 12 MB groß sein.'));
+        }
+
+        const reader = new FileReader();
+
+        reader.onerror = () => reject(new Error('Das Foto konnte nicht gelesen werden.'));
+
+        reader.onload = () => {
+          const bild = new Image();
+
+          bild.onerror = () => reject(new Error('Die Bilddatei ist ungültig.'));
+
+          bild.onload = () => {
+            const max = 1200;
+            const faktor = Math.min(1, max / Math.max(bild.width, bild.height));
+            const canvas = document.createElement('canvas');
+
+            canvas.width = Math.max(1, Math.round(bild.width * faktor));
+            canvas.height = Math.max(1, Math.round(bild.height * faktor));
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bild, 0, 0, canvas.width, canvas.height);
+
+            resolve(canvas.toDataURL('image/jpeg', 0.72));
+          };
+
+          bild.src = reader.result;
+        };
+
+        reader.readAsDataURL(datei);
+      });
+    }
+
+    fotoFeld.addEventListener('change', async () => {
+      vorschau.replaceChildren();
+      fotoDaten = '';
+
+      const datei = fotoFeld.files[0];
+      if (!datei) return;
+
+      try {
+        fotoDaten = await bildLesen(datei);
+        const bild = document.createElement('img');
+        bild.className = 'foto';
+        bild.alt = 'Vorschau des ausgewählten Fotos';
+        bild.src = fotoDaten;
+        vorschau.appendChild(bild);
+      } catch (e) {
+        meldung.textContent = e.message;
+        fotoFeld.value = '';
+      }
     });
+
+    formular.addEventListener('submit', async event => {
+      event.preventDefault();
+      meldung.textContent = '';
+
+      const button = formular.querySelector('[type="submit"]');
+      button.disabled = true;
+
+      try {
+        const email = document.getElementById('email').value.trim();
+        const titel = document.getElementById('titel').value.trim();
+        const beschreibung = document.getElementById('beschreibung').value.trim();
+        const ort = document.getElementById('ort').value.trim();
+        const prioritaet = document.getElementById('prioritaet').value;
+
+        if (!email || !titel || !beschreibung || !ort) {
+          throw new Error('Bitte fülle alle Pflichtfelder aus.');
+        }
+
+        let bild = fotoDaten;
+
+        if (fotoFeld.files[0] && !bild) {
+          bild = await bildLesen(fotoFeld.files[0]);
+        }
+
+        const faelle = laden();
+
+        const neuerFall = {
+          id: crypto.randomUUID
+            ? crypto.randomUUID()
+            : String(Date.now()) + '-' + Math.random().toString(16).slice(2),
+          titel,
+          beschreibung,
+          ort,
+          prioritaet,
+          status: 'Offen',
+          email,
+          erstelltAm: new Date().toISOString(),
+          foto: bild
+        };
+
+        faelle.unshift(neuerFall);
+
+        if (!speichern(faelle)) return;
+
+        formular.reset();
+        fotoDaten = '';
+        vorschau.replaceChildren();
+        meldung.textContent = 'Testmeldung erfolgreich erstellt.';
+        anzeigen();
+      } catch (e) {
+        meldung.textContent = e.message || 'Es ist ein Fehler aufgetreten.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    formular.addEventListener('reset', () => {
+      fotoDaten = '';
+      vorschau.replaceChildren();
+      meldung.textContent = '';
+    });
+
+    function anzeigen() {
+      const container = document.getElementById('faelle');
+      container.replaceChildren();
+      const faelle = laden();
+
+      if (faelle.length === 0) {
+        const leer = document.createElement('p');
+        leer.className = 'leer';
+        leer.textContent = 'Noch keine Testmeldungen vorhanden.';
+        container.appendChild(leer);
+        return;
+      }
+
+      faelle.forEach(fall => {
+        const karte = document.createElement('article');
+        karte.className = 'fall';
+
+        const titel = document.createElement('h3');
+        sichereText(titel, fall.titel);
+        karte.appendChild(titel);
+
+        const meta = document.createElement('p');
+        meta.className = 'meta';
+        meta.textContent =
+          'Ort: ' + fall.ort + ' · Erstellt: ' +
+          new Date(fall.erstelltAm).toLocaleString('de-DE');
+        karte.appendChild(meta);
+
+        const badges = document.createElement('div');
+
+        [ 'Priorität: ' + fall.prioritaet, 'Status: ' + fall.status ]
+          .forEach(text => {
+            const badge = document.createElement('span');
+            badge.className = 'marke';
+            badge.textContent = text;
+            badges.appendChild(badge);
+          });
+
+        karte.appendChild(badges);
+
+        const beschreibung = document.createElement('p');
+        beschreibung.className = 'beschreibung';
+        sichereText(beschreibung, fall.beschreibung);
+        karte.appendChild(beschreibung);
+
+        const absender = document.createElement('p');
+        absender.className = 'meta';
+        sichereText(absender, 'Gemeldet von: ' + fall.email);
+        karte.appendChild(absender);
+
+        if (fall.foto) {
+          const bild = document.createElement('img');
+          bild.className = 'foto';
+          bild.alt = 'Foto zur Reparaturmeldung';
+          bild.src = fall.foto;
+          karte.appendChild(bild);
+        }
+
+        const loeschButton = document.createElement('button');
+        loeschButton.className = 'loeschen';
+        loeschButton.type = 'button';
+        loeschButton.textContent = 'Testmeldung löschen';
+        loeschButton.addEventListener('click', () => {
+          if (!confirm('Diese Testmeldung wirklich löschen?')) return;
+          speichern(laden().filter(item => item.id !== fall.id));
+          anzeigen();
+        });
+
+        karte.appendChild(loeschButton);
+        container.appendChild(karte);
+      });
+    }
+
+    document.getElementById('alleLoeschen').addEventListener('click', () => {
+      if (!confirm('Alle lokal gespeicherten Testmeldungen löschen?')) return;
+      if (speichern([])) {
+        meldung.textContent = 'Alle lokalen Testmeldungen wurden gelöscht.';
+        anzeigen();
+      }
+    });
+
+    document.getElementById('export').addEventListener('click', () => {
+      const daten = JSON.stringify(laden(), null, 2);
+      const url = URL.createObjectURL(
+        new Blob([daten], { type: 'application/json' })
+      );
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'rosengut-reparatur-testmeldungen.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    anzeigen();
   </script>
 </body>
 </html>
