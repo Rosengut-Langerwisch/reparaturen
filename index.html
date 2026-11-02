@@ -1,151 +1,49 @@
 <!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rosengut – Reparaturmanagement</title>
-<style>
-:root{--green:#006338;--bg:#f4f6f4;--border:#d9e0da;--muted:#626b64;--red:#b42318;--yellow:#8a5b00;--blue:#2457a6;--done:#176b3a}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#202620;font:16px/1.45 Arial,Helvetica,sans-serif}
-button,input,textarea,select{font:inherit}button{cursor:pointer}
-header{background:var(--green);color:white;padding:17px 20px}.header-inner,main{max-width:1100px;margin:auto}.header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-size:21px;font-weight:bold}.brand-sub{font-size:13px;opacity:.9}
-main{padding:22px 16px 50px}.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-h1{font-size:26px;margin:0 0 4px}h2{font-size:20px;margin:0 0 14px}h3{font-size:17px;margin:0 0 7px}p{margin:6px 0}.muted,.meta{color:var(--muted);font-size:13px}
-.btn{border:1px solid transparent;border-radius:8px;padding:10px 14px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;gap:7px}.primary{background:var(--green);color:white}.light{background:white;border-color:var(--border);color:#202620}.danger{background:#fff0ef;color:var(--red);border-color:#f3c9c5}.small{padding:7px 10px;font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.tile{background:white;border:1px solid var(--border);border-radius:13px;padding:20px;min-height:145px;text-align:left;color:#202620}.tile:hover{border-color:#8db59c}.tile-icon{display:flex;align-items:center;justify-content:center;width:42px;height:42px;background:#e5f1e9;color:var(--green);border-radius:10px;font-size:23px;margin-bottom:12px}.tile strong{display:block}.tile span:last-child{display:block;color:var(--muted);font-size:13px;margin-top:5px}
-.panel{background:white;border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:18px}.hidden{display:none!important}
-.notice{background:#fff5d9;border:1px solid #ead8a1;border-radius:9px;padding:12px 14px;font-size:13px;margin:0 0 18px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.field{margin-bottom:14px}.full{grid-column:1/-1}label{display:block;font-size:14px;font-weight:bold;margin-bottom:6px}
-input,textarea,select{width:100%;padding:11px 12px;border:1px solid #bac5bc;border-radius:7px;background:white;color:#202620}textarea{min-height:105px;resize:vertical}input:focus,textarea:focus,select:focus{outline:2px solid #83b69a;outline-offset:1px}
-.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.toolbar{display:grid;grid-template-columns:minmax(180px,2fr) repeat(4,minmax(130px,1fr));gap:9px;margin:14px 0}
-.stats{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.stat{background:#f2f5f2;border:1px solid var(--border);padding:8px 11px;border-radius:8px;font-size:13px}
-.case-list{display:grid;gap:10px}.case{background:white;border:1px solid var(--border);border-radius:10px;padding:15px;display:grid;grid-template-columns:1fr auto;gap:12px}.case h3{overflow-wrap:anywhere}.tags{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}.badge{display:inline-flex;border-radius:30px;padding:4px 9px;font-size:12px;font-weight:bold;background:#edf0ed;color:#414941}.status-neu{background:#fde9e7;color:var(--red)}.status-unbearbeitet{background:#fff1cc;color:var(--yellow)}.status-bearbeitung{background:#e8f0ff;color:var(--blue)}.status-erledigt{background:#ddf3e4;color:var(--done)}.prio-Dringend{background:#fde9e7;color:var(--red)}.prio-Mittel{background:#fff1cc;color:var(--yellow)}
-.case-actions{display:flex;gap:7px;align-items:flex-start;flex-wrap:wrap}.empty{border:1px dashed #b9c4bb;border-radius:10px;text-align:center;padding:30px;color:var(--muted);background:white}
-.modal-backdrop{position:fixed;inset:0;background:#10171099;display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}.modal{background:white;border-radius:14px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:22px}.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.detail-item{background:#f5f7f5;border-radius:8px;padding:10px}.detail-item small{display:block;color:var(--muted);margin-bottom:3px}.photo{max-width:100%;max-height:300px;border-radius:8px;display:block;margin-top:10px;object-fit:contain}.log{border-left:2px solid #d6e3d9;padding:0 0 12px 14px;margin-left:6px}.log strong{font-size:13px}footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
-@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1}.case{grid-template-columns:1fr}.form-grid,.detail-grid{grid-template-columns:1fr}.full{grid-column:auto}}
-@media(max-width:480px){header{padding:14px}.brand{font-size:18px}main{padding:16px 12px 40px}.grid{gap:9px}.tile{padding:14px;min-height:135px}.panel{padding:15px}.toolbar{grid-template-columns:1fr}.toolbar input{grid-column:auto}.topline{align-items:flex-start}}
-</style>
-</head>
+<html lang='de'>
+<head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Anmeldetest</title></head>
 <body>
-<header><div class="header-inner"><div><div class="brand">Rosengut · Reparaturmanagement</div><div class="brand-sub">Melden. Bearbeiten. Erledigen.</div></div><span class="brand-sub" id="signedInUser">Google-Anmeldung wird geprüft …</span></div></header>
-<main>
-<div class="notice"><strong>Interner Testbetrieb:</strong> Meldungen werden mit Google Tabellen synchronisiert; Fotos werden im hinterlegten Drive-Ordner gespeichert. Zugriff und Adminrechte müssen in der Apps-Script-Bereitstellung sowie im Tabellenblatt „Admins“ korrekt eingerichtet sein.</div>
-<section id="homeView">
-<div class="topline"><div><h1>Willkommen</h1><p class="muted">Was möchtest du tun?</p></div></div>
-<div class="grid">
-<button class="tile" data-view="overview"><span class="tile-icon">▤</span><strong>Reparaturübersicht</strong><span>Fälle filtern, suchen und öffnen</span></button>
-<button class="tile" data-view="new"><span class="tile-icon">＋</span><strong>Neuen Fall melden</strong><span>Ein Problem schnell erfassen</span></button>
-<button class="tile" data-view="mine"><span class="tile-icon">☷</span><strong>Meine Meldungen</strong><span>Eigene Meldungen verfolgen</span></button>
-<button class="tile" data-view="admin"><span class="tile-icon">⚙</span><strong>Admin-Bereich</strong><span>Status, Priorität und Bearbeiter verwalten</span></button>
-</div>
-<section class="panel"><h2>Aktueller Überblick</h2><div class="stats" id="homeStats"></div></section>
-</section>
-<section id="newView" class="hidden">
-<div class="topline"><div><h1>Neuen Fall melden</h1><p class="muted">Fülle die wichtigsten Angaben aus.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
-<section class="panel"><form id="caseForm"><div class="form-grid">
-<div class="field full"><label for="reporter">Deine E-Mail-Adresse *</label><input id="reporter" type="email" required placeholder="name@rosengut.de"></div>
-<div class="field full"><label for="title">Kurzbeschreibung / Titel *</label><input id="title" maxlength="120" required placeholder="z. B. Hubwagen macht Schleifgeräusche"></div>
-<div class="field"><label for="area">Bereich / Abteilung *</label><select id="area" required><option value="">Bereich auswählen</option><option>Haus 8</option><option>Lager 1</option><option>Kasse</option><option>Café</option><option>Gewächshaus</option><option>Außenverkauf</option><option>Parkplatz</option><option>Büro</option><option>Sonstiges</option></select></div>
-<div class="field"><label for="priority">Priorität</label><select id="priority"><option>Niedrig</option><option selected>Mittel</option><option>Dringend</option></select></div>
-<div class="field full"><label for="description">Genauere Beschreibung *</label><textarea id="description" maxlength="3000" required placeholder="Was ist defekt? Wann tritt das Problem auf?"></textarea></div>
-<div class="field full"><label for="photo">Foto (optional)</label><input id="photo" type="file" accept="image/*" capture="environment"><p class="muted">Auf Smartphones kannst du – abhängig vom Gerät – Kamera oder Mediathek auswählen. Ohne Foto fortfahren ist möglich.</p><div id="photoPreview"></div></div>
-</div><div class="actions"><button class="btn primary" type="submit">Meldung absenden</button><button class="btn light" type="reset">Zurücksetzen</button><button class="btn light" type="button" data-view="home">Abbrechen</button></div></form><p id="formMessage" role="status"></p></section>
-</section>
-<section id="overviewView" class="hidden">
-<div class="topline"><div><h1>Reparaturübersicht</h1><p class="muted">Fälle suchen, filtern und öffnen.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
-<div class="stats" id="overviewStats"></div><div class="toolbar">
-<input id="search" placeholder="Suche nach Titel, Beschreibung oder Ort …" aria-label="Suche">
-<select id="statusFilter" aria-label="Status filtern"><option value="">Alle Status</option><option>Neu</option><option>Unbearbeitet</option><option>In Bearbeitung</option><option>Erledigt</option></select>
-<select id="priorityFilter" aria-label="Priorität filtern"><option value="">Alle Prioritäten</option><option>Dringend</option><option>Mittel</option><option>Niedrig</option></select>
-<select id="areaFilter" aria-label="Bereich filtern"><option value="">Alle Bereiche</option></select>
-<select id="sortBy" aria-label="Sortierung"><option value="priority">Dringende zuerst</option><option value="newest">Neueste zuerst</option><option value="area">Bereich A–Z</option></select>
-</div><div id="caseList" class="case-list"></div>
-</section>
-<section id="mineView" class="hidden">
-<div class="topline"><div><h1>Meine Meldungen</h1><p class="muted">Fälle, die mit deiner Test-E-Mail-Adresse gemeldet wurden.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
-<div class="field"><label for="myEmail">Deine E-Mail-Adresse</label><input id="myEmail" type="email" placeholder="name@rosengut.de"></div><button class="btn primary" id="showMine">Meine Meldungen anzeigen</button><div id="mineList" class="case-list" style="margin-top:14px"></div>
-</section>
-<section id="adminView" class="hidden">
-<div class="topline"><div><h1>Admin-Bereich</h1><p class="muted">Verwaltung von Reparaturfällen.</p></div><button class="btn light" data-view="home">← Startseite</button></div>
-<div class="notice"><strong>Admin-Bereich:</strong> Änderungen an Status, Priorität, Zuweisung und Löschen werden serverseitig anhand des Tabellenblatts „Admins“ geprüft.</div><div id="adminContent"></div>
-</section>
-</main><footer>Rosengut · Reparaturmanagement</footer><div id="modalRoot"></div>
+<h1>Anmeldetest</h1>
+<pre id='out'>Lade …</pre>
+<script src='msal-browser.min.js'></script>
 <script>
-const KEY='rosengut-reparatur-connected-v1';
-let role='Mitarbeitende', photoData='', signedInEmail='', serverReady=false, saveTimer=null;
-const $=id=>document.getElementById(id), STATUSES=['Neu','Unbearbeitet','In Bearbeitung','Erledigt'], PRIORITIES=['Niedrig','Mittel','Dringend'], AREAS=['Haus 8','Lager 1','Kasse','Café','Gewächshaus','Außenverkauf','Parkplatz','Büro','Sonstiges'];
-function load(){try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(a)?a:[]}catch{return[]}}
-function save(a){
-  try { localStorage.setItem(KEY, JSON.stringify(a)); } catch(e) { alert('Lokaler Zwischenspeicher ist voll.'); return false; }
-  if (!serverReady || !window.google || !google.script || !google.script.run) {
-    alert('Keine Verbindung zum Apps-Script-Backend. Bitte die App über die Apps-Script-Web-App öffnen.');
-    return false;
-  }
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>google.script.run
-    .withFailureHandler(err=>alert('Synchronisierung fehlgeschlagen: '+(err && err.message ? err.message : err)))
-    .withSuccessHandler(()=>{ /* server confirmed */ })
-    .saveAllCases(a), 150);
-  return true;
-}
-function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function dt(s){return s?new Date(s).toLocaleString('de-DE'):'–'}
-function statusClass(s){return({'Neu':'status-neu','Unbearbeitet':'status-unbearbeitet','In Bearbeitung':'status-bearbeitung','Erledigt':'status-erledigt'})[s]||''}
-function user(){return signedInEmail||$('reporter').value.trim()||$('myEmail').value.trim()||'unbekannt'}
-function log(f,action,detail=''){f.history=f.history||[];f.history.unshift({time:new Date().toISOString(),user:user(),action,detail});f.lastBy=user();f.lastAt=new Date().toISOString()}
-function view(v){['home','new','overview','mine','admin'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v));if(v==='overview')renderOverview();if(v==='home')renderHome();if(v==='admin')renderAdmin();if(v==='mine')$('myEmail').value=$('reporter').value||$('myEmail').value;window.scrollTo({top:0,behavior:'smooth'})}
-document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
-document.querySelectorAll('.tile').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
-function stats(target,items){const c=[['Offen',items.filter(f=>f.status!=='Erledigt').length],['Dringend',items.filter(f=>f.priority==='Dringend'&&f.status!=='Erledigt').length],['In Bearbeitung',items.filter(f=>f.status==='In Bearbeitung').length],['Erledigt',items.filter(f=>f.status==='Erledigt').length]];$(target).innerHTML=c.map(([n,v])=>`<div class="stat"><strong>${v}</strong> ${n}</div>`).join('')}
-function renderHome(){stats('homeStats',load())}
-function setupAreas(){const old=$('areaFilter').value;$('areaFilter').innerHTML='<option value="">Alle Bereiche</option>'+AREAS.map(a=>`<option>${esc(a)}</option>`).join('');$('areaFilter').value=old}
-function filtered(items){const q=$('search').value.trim().toLowerCase(),s=$('statusFilter').value,p=$('priorityFilter').value,a=$('areaFilter').value,sort=$('sortBy').value;items=items.filter(f=>(!q||[f.title,f.description,f.area,f.reporter,f.assignee].join(' ').toLowerCase().includes(q))&&(!s||f.status===s)&&(!p||f.priority===p)&&(!a||f.area===a));items.sort((x,y)=>{if(sort==='area')return x.area.localeCompare(y.area,'de')||new Date(y.createdAt)-new Date(x.createdAt);if(sort==='newest')return new Date(y.createdAt)-new Date(x.createdAt);const r={Dringend:0,Mittel:1,Niedrig:2};return r[x.priority]-r[y.priority]||new Date(y.createdAt)-new Date(x.createdAt)});return items}
-function card(f){return `<article class="case"><div><h3>${esc(f.title)}</h3><div class="tags"><span class="badge ${statusClass(f.status)}">${esc(f.status)}</span><span class="badge prio-${esc(f.priority)}">${esc(f.priority)}</span></div><div class="meta">${esc(f.area)} · Gemeldet ${dt(f.createdAt)} · von ${esc(f.reporter)}</div><p>${esc(f.description).slice(0,190)}${f.description.length>190?'…':''}</p><div class="meta">Bearbeiter: ${esc(f.assignee||'Noch nicht zugewiesen')} · Zuletzt bearbeitet: ${esc(f.lastBy||'–')} (${dt(f.lastAt)})</div></div><div class="case-actions"><button class="btn light small" data-detail="${esc(f.id)}">Details</button>${role==='Admin'?`<button class="btn primary small" data-edit="${esc(f.id)}">Bearbeiten</button>`:''}</div></article>`}
-function renderList(target,items){$(target).innerHTML=items.length?items.map(card).join(''):'<div class="empty">Keine passenden Reparaturfälle gefunden.</div>'}
-function renderOverview(){setupAreas();const c=load();stats('overviewStats',c);renderList('caseList',filtered(c))}
-['search','statusFilter','priorityFilter','areaFilter','sortBy'].forEach(id=>$(id).addEventListener('input',renderOverview));
-$('showMine').addEventListener('click',()=>{const email=$('myEmail').value.trim().toLowerCase();if(!email){$('mineList').innerHTML='<div class="empty">Bitte gib deine E-Mail-Adresse ein.</div>';return}renderList('mineList',load().filter(f=>f.reporter.toLowerCase()===email).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)))});
-function initConnectedApp(){
-  if (!window.google || !google.script || !google.script.run) {
-    $('signedInUser').textContent='Bitte über die Apps-Script-Web-App öffnen';
-    $('formMessage').textContent='Diese Version muss über die bereitgestellte Apps-Script-Web-App geöffnet werden.';
-    serverReady=false; return;
-  }
-  google.script.run
-    .withFailureHandler(err=>{
-      $('signedInUser').textContent='Anmeldung/Verbindung fehlgeschlagen';
-      alert('Backend nicht erreichbar: '+(err && err.message ? err.message : err));
-    })
-    .withSuccessHandler(data=>{
-      signedInEmail=data.email||'';
-      role=data.isAdmin?'Admin':'Mitarbeitende';
-      $('signedInUser').textContent=(signedInEmail||'Google-Konto')+' · '+role;
-      serverReady=true;
-      localStorage.setItem(KEY,JSON.stringify(data.cases||[]));
-      renderHome(); renderOverview(); renderAdmin();
-    }).getInitialData();
-}
-function renderAdmin(){if(role!=='Admin'){$('adminContent').innerHTML='<div class="empty"><h3>Kein Admin-Zugriff</h3><p>Dein Google-Konto ist im Tabellenblatt „Admins“ nicht als aktiver Admin eingetragen.</p></div>';return}const c=load().filter(f=>f.status!=='Erledigt');renderList('adminContent',c)}
-function readImage(file){return new Promise((resolve,reject)=>{if(!file)return resolve('');if(!file.type.startsWith('image/'))return reject(Error('Bitte eine Bilddatei auswählen.'));if(file.size>12*1024*1024)return reject(Error('Das Foto darf maximal 12 MB groß sein.'));const r=new FileReader();r.onerror=()=>reject(Error('Foto konnte nicht gelesen werden.'));r.onload=()=>{const img=new Image();img.onerror=()=>reject(Error('Ungültige Bilddatei.'));img.onload=()=>{const scale=Math.min(1,1200/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.72))};img.src=r.result};r.readAsDataURL(file)})}
-$('photo').addEventListener('change',async()=>{photoData='';$('photoPreview').replaceChildren();if(!$('photo').files[0])return;try{photoData=await readImage($('photo').files[0]);const im=document.createElement('img');im.className='photo';im.alt='Fotovorschau';im.src=photoData;$('photoPreview').append(im)}catch(e){$('formMessage').textContent=e.message;$('photo').value=''}});
-$('caseForm').addEventListener('reset',()=>{photoData='';$('photoPreview').replaceChildren();$('formMessage').textContent=''});
-$('caseForm').addEventListener('submit',async e=>{e.preventDefault();const button=$('caseForm').querySelector('[type=submit]');button.disabled=true;try{const reporter=$('reporter').value.trim(),title=$('title').value.trim(),area=$('area').value,description=$('description').value.trim(),priority=$('priority').value;if(!reporter||!title||!area||!description)throw Error('Bitte fülle alle Pflichtfelder aus.');let photo=photoData;if($('photo').files[0]&&!photo)photo=await readImage($('photo').files[0]);const createRecord=(photoRef)=>{
-  const f={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title,area,description,priority,status:'Neu',reporter:signedInEmail||reporter,assignee:'',createdAt:new Date().toISOString(),lastBy:'',lastAt:'',completedBy:'',completedAt:'',photo:photoRef||'',notes:[],history:[]};
-  f.history.push({time:f.createdAt,user:f.reporter,action:'Fall erstellt',detail:'Status: Neu'});
-  const all=load();all.unshift(f);
-  if(save(all)){$('caseForm').reset();$('formMessage').textContent='Meldung wurde zur Synchronisierung übergeben.';renderHome();view('overview')}
+const CFG = {
+  clientId: '0fb63a5b-1b13-4e0a-8557-2539b2b96258',
+  tenantId: 'a1401f5e-c83f-4acf-adcb-93291e8b26aa',
+  siteHost: 'rosengutde.sharepoint.com',
+  sitePath: '/sites/Reparaturen'
 };
-if(photo && window.google && google.script && google.script.run){
-  google.script.run.withFailureHandler(err=>{throw Error('Foto-Upload fehlgeschlagen: '+(err && err.message ? err.message : err))})
-    .withSuccessHandler(fileId=>createRecord(fileId))
-    .savePhoto(photo, title.replace(/[^a-z0-9_-]/gi,'_')+'.jpg');
-} else createRecord('');}catch(err){$('formMessage').textContent=err.message||'Fehler beim Erstellen.'}finally{button.disabled=false}});
-document.addEventListener('click',e=>{const d=e.target.closest('[data-detail]'),ed=e.target.closest('[data-edit]');if(d)openDetail(d.dataset.detail,false);if(ed)openDetail(ed.dataset.edit,true)});
-function openDetail(id,forceEdit=false){const f=load().find(x=>x.id===id);if(!f)return;const admin=role==='Admin';const root=$('modalRoot');root.innerHTML=`<div class="modal-backdrop" id="backdrop"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><h2>${esc(f.title)}</h2><div class="tags"><span class="badge ${statusClass(f.status)}">${esc(f.status)}</span><span class="badge prio-${esc(f.priority)}">${esc(f.priority)}</span></div></div><button class="btn light small" id="closeModal">Schließen ✕</button></div><div class="detail-grid"><div class="detail-item"><small>Bereich</small><strong>${esc(f.area)}</strong></div><div class="detail-item"><small>Gemeldet von / am</small><strong>${esc(f.reporter)}<br>${dt(f.createdAt)}</strong></div><div class="detail-item"><small>Bearbeiter</small><strong>${esc(f.assignee||'Noch nicht zugewiesen')}</strong></div><div class="detail-item"><small>Zuletzt bearbeitet</small><strong>${esc(f.lastBy||'–')}<br>${dt(f.lastAt)}</strong></div>${f.completedAt?`<div class="detail-item"><small>Erledigt von / am</small><strong>${esc(f.completedBy)}<br>${dt(f.completedAt)}</strong></div>`:''}</div><h3>Beschreibung</h3><p>${esc(f.description)}</p>${f.photo?`<img class="photo" src="https://drive.google.com/uc?export=view&id=${encodeURIComponent(f.photo)}" alt="Foto zum Fall">`:''}${admin?`<hr><h3>Fall bearbeiten</h3><div class="form-grid"><div class="field"><label for="editStatus">Status</label><select id="editStatus">${STATUSES.map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field"><label for="editPriority">Priorität</label><select id="editPriority">${PRIORITIES.map(s=>`<option ${f.priority===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field full"><label for="editAssignee">Bearbeiter (Name oder E-Mail)</label><input id="editAssignee" value="${esc(f.assignee)}"></div><div class="field full"><label for="editNote">Neue Notiz</label><textarea id="editNote" placeholder="z. B. Ersatzteil bestellt …"></textarea></div></div><div class="actions"><button class="btn primary" id="saveEdit">Änderungen speichern</button>${f.status!=='Erledigt'?'<button class="btn primary" id="markDone">Als erledigt markieren</button>':''}<button class="btn danger" id="deleteCase">Endgültig löschen</button></div>`:''}<hr><h3>Notizen</h3>${(f.notes||[]).length?f.notes.map(n=>`<div class="detail-item" style="margin:8px 0"><p>${esc(n.text)}</p><small>${esc(n.user)} · ${dt(n.time)}</small></div>`).join(''):'<p class="muted">Noch keine Notizen.</p>'}<h3 style="margin-top:18px">Verlauf</h3>${(f.history||[]).length?f.history.map(l=>`<div class="log"><strong>${esc(l.action)}</strong><div>${esc(l.detail||'')}</div><div class="meta">${esc(l.user)} · ${dt(l.time)}</div></div>`).join(''):'<p class="muted">Noch kein Verlauf vorhanden.</p>'}</section></div>`;
-$('closeModal').onclick=()=>root.replaceChildren();$('backdrop').onclick=e=>{if(e.target.id==='backdrop')root.replaceChildren()};
-if(admin){$('saveEdit').onclick=()=>{const all=load(),item=all.find(x=>x.id===id);if(!item)return;const ns=$('editStatus').value,np=$('editPriority').value,na=$('editAssignee').value.trim(),note=$('editNote').value.trim(),changes=[];if(item.status!==ns){changes.push(`Status: ${item.status} → ${ns}`);item.status=ns}if(item.priority!==np){changes.push(`Priorität: ${item.priority} → ${np}`);item.priority=np}if((item.assignee||'')!==na){changes.push(`Bearbeiter: ${item.assignee||'–'} → ${na||'–'}`);item.assignee=na}if(note){item.notes=item.notes||[];item.notes.unshift({text:note,user:user(),time:new Date().toISOString()});changes.push('Notiz ergänzt')}if(!changes.length){alert('Keine Änderungen vorgenommen.');return}if(item.status==='Erledigt'&&!item.completedAt){item.completedAt=new Date().toISOString();item.completedBy=user()}if(item.status!=='Erledigt'){item.completedAt='';item.completedBy=''}item.history=item.history||[];log(item,'Fall aktualisiert',changes.join(' | '));if(save(all)){root.replaceChildren();renderOverview();renderAdmin();renderHome()}};$('markDone')?.addEventListener('click',()=>{const all=load(),item=all.find(x=>x.id===id);item.status='Erledigt';item.completedAt=new Date().toISOString();item.completedBy=user();log(item,'Fall erledigt','Status auf Erledigt gesetzt');if(save(all)){root.replaceChildren();renderOverview();renderAdmin();renderHome()}});$('deleteCase').onclick=()=>{if(!confirm('Diesen Fall endgültig aus dem lokalen Test speichern löschen?'))return;save(load().filter(x=>x.id!==id));root.replaceChildren();renderOverview();renderAdmin();renderHome()}}}
-renderHome();
-initConnectedApp();
+const SCOPES = ['User.Read', 'Sites.Read.All'];
+const out = document.getElementById('out');
+(async () => {
+  const app = new msal.PublicClientApplication({
+    auth: {
+      clientId: CFG.clientId,
+      authority: 'https://login.microsoftonline.com/' + CFG.tenantId,
+      redirectUri: location.origin + location.pathname
+    },
+    cache: { cacheLocation: 'localStorage' }
+  });
+  await app.initialize();
+  const r = await app.handleRedirectPromise();
+  const acc = (r && r.account) || app.getAllAccounts()[0];
+  if (!acc) { await app.loginRedirect({ scopes: SCOPES }); return; }
+  let tok;
+  try { tok = await app.acquireTokenSilent({ scopes: SCOPES, account: acc }); }
+  catch (e) { await app.acquireTokenRedirect({ scopes: SCOPES, account: acc }); return; }
+  const g = async (u) => {
+    const x = await fetch('https://graph.microsoft.com/v1.0' + u, { headers: { Authorization: 'Bearer ' + tok.accessToken } });
+    return x.json();
+  };
+  const me = await g('/me');
+  const site = await g('/sites/' + CFG.siteHost + ':' + CFG.sitePath);
+  const lists = site.id ? await g('/sites/' + site.id + '/lists?$select=displayName') : null;
+  out.textContent = JSON.stringify({
+    angemeldet: me.displayName || me.error,
+    mail: me.mail,
+    website: site.displayName || site.error,
+    listen: lists && lists.value ? lists.value.map(l => l.displayName) : lists
+  }, null, 2);
+})().catch(e => { out.textContent = 'Fehler: ' + e.message; });
 </script>
 </body>
 </html>
