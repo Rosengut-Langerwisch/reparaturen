@@ -44,6 +44,98 @@ const out = document.getElementById('out');
     listen: lists && lists.value ? lists.value.map(l => l.displayName) : lists
   }, null, 2);
 })().catch(e => { out.textContent = 'Fehler: ' + e.message; });
+document.getElementById('testWrite').addEventListener('click', async () => {
+  const result = document.getElementById('testResult');
+  result.textContent = 'Test wird ausgeführt ...';
+
+  try {
+    const accounts = msalInstance.getAllAccounts();
+    const account = accounts[0];
+
+    if (!account) {
+      throw new Error('Bitte zuerst anmelden.');
+    }
+
+    const token = await msalInstance.acquireTokenSilent({
+      scopes: ['Sites.ReadWrite.All'],
+      account
+    });
+
+    const siteResponse = await fetch(
+      'https://graph.microsoft.com/v1.0/sites/' +
+      CFG.siteHost + ':' + CFG.sitePath,
+      {
+        headers: {
+          Authorization: 'Bearer ' + token.accessToken
+        }
+      }
+    );
+
+    const site = await siteResponse.json();
+
+    if (!site.id) {
+      throw new Error('SharePoint-Website nicht gefunden: ' +
+        JSON.stringify(site));
+    }
+
+    const listsResponse = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${site.id}/lists?$select=id,displayName`,
+      {
+        headers: {
+          Authorization: 'Bearer ' + token.accessToken
+        }
+      }
+    );
+
+    const lists = await listsResponse.json();
+    const casesList = lists.value.find(l => l.displayName === 'Fälle');
+
+    if (!casesList) {
+      throw new Error('Die Liste „Fälle“ wurde nicht gefunden.');
+    }
+
+    const createResponse = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/${casesList.id}/items`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token.accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fields: {
+            Title: 'TEST – Reparaturmeldung',
+            Bereich: 'Sonstiges',
+            Beschreibung: 'Automatischer Schreibtest',
+            Prioritaet: 'Mittel',
+            Status: 'Neu',
+            Melder: account.username,
+            MelderName: account.name || account.username
+          }
+        })
+      }
+    );
+
+    const created = await createResponse.json();
+
+    if (!createResponse.ok) {
+      throw new Error(JSON.stringify(created.error || created));
+    }
+
+    result.textContent =
+      'Erfolgreich angelegt! SharePoint-ID: ' + created.id;
+
+  } catch (error) {
+    result.textContent = 'Fehler: ' + error.message;
+  }
+});
 </script>
+  <div style="padding:20px">
+  <h2>SharePoint-Schreibtest</h2>
+  <button id="testWrite" type="button">
+    Testfall in SharePoint anlegen
+  </button>
+  <pre id="testResult"></pre>
+</div>
 </body>
 </html>
