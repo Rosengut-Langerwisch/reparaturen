@@ -1,197 +1,114 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Reparaturmeldungen – Schreibtest</title>
-</head>
-
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rosengut – Reparaturmeldungen</title><script src="msal-browser.min.js"></script>
+<style>
+:root{--g:#006338;--gd:#004d2b;--bg:#f4f7f4;--line:#dce4de;--muted:#68736c;--red:#d2322a;--purple:#8966a0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#202923;font-family:Arial,sans-serif}
+header{background:var(--g);color:white;padding:17px max(18px,calc((100% - 1120px)/2));display:flex;justify-content:space-between;align-items:center;gap:15px}
+.brand{font-size:20px;font-weight:bold}.brand small{display:block;font-size:11px;font-weight:normal;margin-top:3px}
+header button{background:transparent;border:1px solid #ffffff88;color:white;border-radius:7px;padding:7px 10px}
+main{max-width:1120px;margin:auto;padding:28px 18px 60px}h1{font-size:28px;margin:0 0 7px}h2{font-size:20px;margin:0 0 16px}h3{font-size:16px;margin:20px 0 10px}
+.sub,.muted{color:var(--muted);font-size:13px}.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:25px 0}
+.tile,.panel{background:white;border:1px solid var(--line);border-radius:13px;box-shadow:0 6px 22px #1432200d}
+.tile{text-align:left;padding:20px;min-height:125px;cursor:pointer}.tile:hover{border-color:#8bac97;transform:translateY(-1px)}
+.tile b{display:block;color:var(--gd);margin:12px 0 6px}.tile span{font-size:12px;color:var(--muted)}.symbol{font-size:25px}
+.panel{padding:22px;margin:15px 0}.hidden{display:none!important}
+label{font-size:13px;font-weight:bold;display:block;margin:0 0 6px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd6ce;border-radius:8px;background:white;font:inherit;color:#202923}
+textarea{min-height:105px;resize:vertical}.field{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn{border:0;border-radius:8px;background:var(--g);color:white;padding:11px 16px;font-weight:bold;cursor:pointer}.btn.secondary{background:#edf2ee;color:var(--gd);border:1px solid var(--line)}.btn:disabled{opacity:.5}
+.actions,.toolbar,.meta{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.toolbar{margin-bottom:14px}.toolbar>*{flex:1;min-width:140px}
+.case{background:white;border:1px solid var(--line);border-radius:10px;padding:15px;margin:9px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}.case h3{margin:0 0 7px}.meta{font-size:12px;color:var(--muted);margin-top:7px}
+.pill{display:inline-block;padding:4px 9px;border-radius:20px;background:#edf2ee;font-size:11px;font-weight:bold}.red{background:#fdecea;color:#a5221c}.purple{background:#f1eaf5;color:#65477a}.green{background:#e5f3e9;color:#176337}
+.notice{padding:12px;border-radius:8px;background:#eaf3ee;color:var(--gd);font-size:13px;margin:12px 0}.error{background:#fff0ef;color:#98251e}
+.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:9px}
+.history{border-left:2px solid var(--line);padding-left:15px}.entry{margin:0 0 15px}.entry small{color:var(--muted)}.entry p{white-space:pre-wrap;margin:5px 0}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
+@media(max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.case{align-items:flex-start;flex-direction:column}main{padding:20px 12px}}
+</style></head>
 <body>
-  <h1>Anmeldetest</h1>
-  <pre id="out">Lade …</pre>
-
-  <hr>
-
-  <h2>SharePoint-Schreibtest</h2>
-  <p>Mit diesem Button wird ein Testfall in der SharePoint-Liste „Fälle“ angelegt.</p>
-
-  <button id="testWrite" type="button" disabled>
-    Testfall in SharePoint anlegen
-  </button>
-
-  <pre id="testResult"></pre>
-
-  <script src="msal-browser.min.js"></script>
-
-  <script>
-  const CFG = {
-    clientId: '0fb63a5b-1b13-4e0a-8557-2539b2b96258',
-    tenantId: 'a1401f5e-c83f-4acf-adcb-93291e8b26aa',
-    siteHost: 'rosengutde.sharepoint.com',
-    sitePath: '/sites/Reparaturen'
-  };
-
-  const SCOPES = ['User.Read', 'Sites.ReadWrite.All'];
-
-  const out = document.getElementById('out');
-  const testButton = document.getElementById('testWrite');
-  const testResult = document.getElementById('testResult');
-
-  (async () => {
-    // MSAL initialisieren
-    const app = new msal.PublicClientApplication({
-      auth: {
-        clientId: CFG.clientId,
-        authority: 'https://login.microsoftonline.com/' + CFG.tenantId,
-        redirectUri: location.origin + location.pathname
-      },
-      cache: {
-        cacheLocation: 'localStorage'
-      }
-    });
-
-    await app.initialize();
-
-    // Anmeldung verarbeiten
-    const redirectResult = await app.handleRedirectPromise();
-    const account =
-      (redirectResult && redirectResult.account) ||
-      app.getAllAccounts()[0];
-
-    if (!account) {
-      out.textContent = 'Weiterleitung zur Microsoft-Anmeldung …';
-      await app.loginRedirect({ scopes: SCOPES });
-      return;
-    }
-
-    // Zugriffstoken holen
-    let tokenResult;
-
-    try {
-      tokenResult = await app.acquireTokenSilent({
-        scopes: SCOPES,
-        account: account
-      });
-    } catch (error) {
-      await app.acquireTokenRedirect({
-        scopes: SCOPES,
-        account: account
-      });
-      return;
-    }
-
-    // Hilfsfunktion für Microsoft Graph
-    async function graphRequest(url, options = {}) {
-      const response = await fetch(
-        'https://graph.microsoft.com/v1.0' + url,
-        {
-          ...options,
-          headers: {
-            Authorization: 'Bearer ' + tokenResult.accessToken,
-            'Content-Type': 'application/json',
-            ...(options.headers || {})
-          }
-        }
-      );
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          data.error?.message ||
-          JSON.stringify(data) ||
-          'Microsoft Graph Fehler: ' + response.status
-        );
-      }
-
-      return data;
-    }
-
-    // Benutzer und SharePoint-Website abrufen
-    const me = await graphRequest('/me');
-
-    const site = await graphRequest(
-      '/sites/' + CFG.siteHost + ':' + CFG.sitePath
-    );
-
-    if (!site.id) {
-      throw new Error('SharePoint-Website wurde nicht gefunden.');
-    }
-
-    // Listen abrufen
-    const lists = await graphRequest(
-      '/sites/' + site.id + '/lists?$select=id,displayName'
-    );
-
-    const casesList = lists.value.find(
-      list => list.displayName === 'Fälle'
-    );
-
-    if (!casesList) {
-      throw new Error('Die SharePoint-Liste „Fälle“ wurde nicht gefunden.');
-    }
-
-    // Anmeldetest anzeigen
-    out.textContent = JSON.stringify({
-      angemeldet: me.displayName,
-      mail: me.mail || me.userPrincipalName,
-      website: site.displayName,
-      liste: casesList.displayName,
-      status: 'Verbindung erfolgreich'
-    }, null, 2);
-
-    // Schreibtest aktivieren
-    testButton.disabled = false;
-
-    testButton.addEventListener('click', async () => {
-      testButton.disabled = true;
-      testResult.textContent = 'Test wird ausgeführt …';
-
-      try {
-        // Aktuelles Zugriffstoken erneuern bzw. abrufen
-        const freshToken = await app.acquireTokenSilent({
-          scopes: SCOPES,
-          account: account
-        });
-
-        tokenResult = freshToken;
-
-        // Testfall in SharePoint anlegen
-        const created = await graphRequest(
-          '/sites/' + site.id + '/lists/' + casesList.id + '/items',
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              fields: {
-                Title: 'TEST – Reparaturmeldung',
-                Bereich: 'Sonstiges',
-                Beschreibung: 'Automatischer Schreibtest',
-                Prioritaet: 'Mittel',
-                Status: 'Neu',
-                Melder: account.username,
-                MelderName: account.name || account.username
-              }
-            })
-          }
-        );
-
-        testResult.textContent =
-          'Erfolgreich angelegt!\n' +
-          'SharePoint-ID: ' + created.id;
-
-      } catch (error) {
-        testResult.textContent =
-          'Fehler beim Schreibtest:\n' + error.message;
-
-      } finally {
-        testButton.disabled = false;
-      }
-    });
-
-  })().catch(error => {
-    out.textContent = 'Fehler: ' + error.message;
-  });
-  </script>
-</body>
-</html>
+<header><div class="brand">Rosengut<small>Reparaturmeldungen</small></div><div id="userline">Nicht angemeldet</div></header>
+<main>
+<section id="login" class="panel hidden"><h1>Reparaturmeldungen</h1><p class="sub">Melde Schäden und Reparaturbedarf direkt an unser Team.</p><button class="btn" id="loginBtn">Mit Microsoft 365 anmelden</button></section>
+<section id="app" class="hidden">
+<h1 id="greeting">Hallo!</h1><p class="sub">Was möchtest du heute erledigen?</p><div id="role" class="muted"></div>
+<nav class="tiles">
+<button class="tile" data-view="new"><div class="symbol">＋</div><b>Neuer Fall</b><span>Ein Problem oder einen Defekt melden</span></button>
+<button class="tile" data-view="overview"><div class="symbol">▤</div><b>Übersicht</b><span>Alle Reparaturmeldungen ansehen</span></button>
+<button class="tile" data-view="mine"><div class="symbol">☷</div><b>Meine Meldungen</b><span>Den Stand deiner Meldungen verfolgen</span></button>
+<button class="tile hidden" id="adminTile" data-view="admin"><div class="symbol">⚙</div><b>Admin</b><span>Fälle verwalten und Zuständigkeiten festlegen</span></button>
+</nav>
+<section id="v-new" class="panel hidden"><h2>Neuen Reparaturfall melden</h2>
+<form id="newForm"><div class="grid">
+<div class="field"><label>Was ist das Problem? *</label><input id="title" required maxlength="180" placeholder="Kurze Beschreibung"></div>
+<div class="field"><label>Bereich *</label><select id="area" required><option value="">Bitte auswählen</option><option>Haus 8</option><option>Lager 1</option><option>Kasse</option><option>Café</option><option>Sonstiges</option></select></div>
+<div class="field"><label>Priorität *</label><select id="priority"><option>Mittel</option><option>Dringend</option><option>Niedrig</option></select></div>
+<div class="field"><label>Foto (optional)</label><input id="photo" type="file" accept="image/*"><small class="muted">Ein Bild, maximal 10 MB.</small></div></div>
+<div class="field"><label>Weitere Informationen *</label><textarea id="description" required placeholder="Wo genau befindet sich das Problem? Was ist passiert?"></textarea></div>
+<div class="actions"><button class="btn">Meldung absenden</button><button type="button" class="btn secondary" data-home>Abbrechen</button></div></form><div id="newMsg"></div></section>
+<section id="v-overview" class="panel hidden"><h2>Alle Reparaturfälle</h2><div class="toolbar"><input id="search" placeholder="Suchen …"><select id="fStatus"><option value="">Alle Status</option><option>Neu</option><option>In Bearbeitung</option><option>Erledigt</option></select><select id="fPriority"><option value="">Alle Prioritäten</option><option>Dringend</option><option>Mittel</option><option>Niedrig</option></select><select id="fArea"><option value="">Alle Bereiche</option><option>Haus 8</option><option>Lager 1</option><option>Kasse</option><option>Café</option><option>Sonstiges</option></select></div><div id="allCases"></div></section>
+<section id="v-mine" class="panel hidden"><h2>Meine Meldungen</h2><div id="myCases"></div></section>
+<section id="v-admin" class="panel hidden"><h2>Administration</h2><p class="sub">Fälle priorisieren, zuweisen und abschließen.</p><div id="adminCases"></div></section>
+<section id="v-detail" class="panel hidden"><div id="detail"></div><div class="actions"><button class="btn secondary" id="back">Zurück</button></div></section>
+</section></main><footer>Rosengut · Reparaturmeldungen</footer>
+<script>
+(()=>{
+'use strict';
+const CFG={clientId:'0fb63a5b-1b13-4e0a-8557-2539b2b96258',tenantId:'a1401f5e-c83f-4acf-adcb-93291e8b26aa',host:'rosengutde.sharepoint.com',path:'/sites/Reparaturen'};
+const SCOPES=['User.Read','Sites.ReadWrite.All'], $=id=>document.getElementById(id);
+const S={app:null,account:null,site:null,lists:{},admin:false,cases:[],back:'overview'};
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dt=x=>x?new Date(x).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}):'–';
+const status=x=>`<span class="pill ${x==='Erledigt'?'green':x==='Neu'?'red':'purple'}">${esc(x||'Unbekannt')}</span>`;
+const prio=x=>`<span class="pill ${x==='Dringend'?'red':x==='Niedrig'?'':'purple'}">${esc(x||'–')}</span>`;
+function msg(id,t,err=false){$(id).innerHTML=`<div class="notice ${err?'error':''}">${esc(t)}</div>`}
+async function token(){try{return (await S.app.acquireTokenSilent({scopes:SCOPES,account:S.account})).accessToken}catch(e){return (await S.app.acquireTokenPopup({scopes:SCOPES,account:S.account})).accessToken}}
+async function api(path,opts={}){const t=await token(),r=await fetch('https://graph.microsoft.com/v1.0'+path,{...opts,headers:{Authorization:'Bearer '+t,...(opts.body?{'Content-Type':'application/json'}:{}),...(opts.headers||{})}}),d=r.status===204?{}:await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error?.message||`Graph-Fehler ${r.status}`);return d}
+async function pages(path){let p=path,a=[];while(p){const d=await api(p.replace('https://graph.microsoft.com/v1.0',''));a.push(...(d.value||[]));p=d['@odata.nextLink']||''}return a}
+async function init(){
+ S.app=new msal.PublicClientApplication({auth:{clientId:CFG.clientId,authority:'https://login.microsoftonline.com/'+CFG.tenantId,redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});
+ await S.app.initialize();const rr=await S.app.handleRedirectPromise();S.account=(rr&&rr.account)||S.app.getAllAccounts()[0];
+ if(!S.account){$('login').classList.remove('hidden');$('loginBtn').onclick=()=>S.app.loginRedirect({scopes:SCOPES});return}
+ await token();S.site=await api('/sites/'+CFG.host+':'+CFG.path);
+ const ls=await api(`/sites/${S.site.id}/lists?$select=id,displayName`);(ls.value||[]).forEach(x=>S.lists[x.displayName]=x);
+ for(const n of ['Fälle','Verlauf','Admins','Fotos'])if(!S.lists[n])throw Error(`SharePoint-Element „${n}“ fehlt.`);
+ const admins=await pages(`/sites/${S.site.id}/lists/${S.lists.Admins.id}/items?$expand=fields&$top=200`);
+ S.admin=admins.some(x=>(x.fields?.Title||'').trim().toLowerCase()===S.account.username.toLowerCase());
+ $('userline').innerHTML=`${esc(S.account.name||S.account.username)} <button id="logout">Abmelden</button>`;
+ $('logout').onclick=()=>S.app.logoutRedirect({account:S.account});$('greeting').textContent='Hallo '+(S.account.name||'!');$('role').textContent=S.admin?'Administrator':'Mitarbeiter';
+ if(S.admin)$('adminTile').classList.remove('hidden');$('app').classList.remove('hidden');
+ document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));
+ document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>go('home'));
+ $('newForm').onsubmit=createCase;$('back').onclick=()=>go(S.back);
+ ['search','fStatus','fPriority','fArea'].forEach(id=>$(id).addEventListener('input',renderAll));
+ await load();go('home');
+}
+async function load(){const rows=await pages(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/items?$expand=fields&$top=200`);S.cases=rows.map(r=>({id:r.id,...r.fields})).sort((a,b)=>new Date(b.Created||0)-new Date(a.Created||0))}
+function go(v){['new','overview','mine','admin','detail'].forEach(x=>$('v-'+x).classList.toggle('hidden',x!==v));if(v==='home')['new','overview','mine','admin','detail'].forEach(x=>$('v-'+x).classList.add('hidden'));if(v==='overview')renderAll();if(v==='mine')renderMine();if(v==='admin'){if(!S.admin)return go('home');renderAdmin()}}
+function card(c){return `<article class="case"><div><h3>#${esc(c.id)} · ${esc(c.Title)}</h3><div class="meta">${esc(c.Bereich||'–')} · ${esc(c.MelderName||c.Melder||'–')} · ${dt(c.Created)}</div><div class="meta">${status(c.Status)} ${prio(c.Prioritaet)} ${c.BearbeiterName?`<span class="pill">Zuständig: ${esc(c.BearbeiterName)}</span>`:''}</div></div><button class="btn secondary" data-open="${esc(c.id)}">Details</button></article>`}
+function bindOpen(el){el.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>detail(b.dataset.open))}
+function renderAll(){const q=$('search').value.toLowerCase(),s=$('fStatus').value,p=$('fPriority').value,a=$('fArea').value;const list=S.cases.filter(c=>(!s||c.Status===s)&&(!p||c.Prioritaet===p)&&(!a||c.Bereich===a)&&(!q||[c.Title,c.Beschreibung,c.Bereich,c.MelderName,c.Melder].some(v=>String(v||'').toLowerCase().includes(q))));$('allCases').innerHTML=list.length?list.map(card).join(''):'<div class="empty">Keine passenden Meldungen gefunden.</div>';bindOpen($('allCases'))}
+function renderMine(){const list=S.cases.filter(c=>(c.Melder||'').toLowerCase()===S.account.username.toLowerCase());$('myCases').innerHTML=list.length?list.map(card).join(''):'<div class="empty">Du hast bisher keine Meldungen erstellt.</div>';bindOpen($('myCases'))}
+function renderAdmin(){ $('adminCases').innerHTML=S.cases.length?S.cases.map(card).join(''):'<div class="empty">Keine Meldungen vorhanden.</div>';bindOpen($('adminCases'))}
+async function upload(file){const d=await api(`/sites/${S.site.id}/lists/${S.lists.Fotos.id}/drive`),name=Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_'),t=await token();const r=await fetch(`https://graph.microsoft.com/v1.0/drives/${d.id}/root:/${encodeURIComponent(name)}:/content`,{method:'PUT',headers:{Authorization:'Bearer '+t,'Content-Type':file.type},body:file}),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error?.message||'Foto-Upload fehlgeschlagen');return j.id}
+async function history(id,kind,text){await api(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items`,{method:'POST',body:JSON.stringify({fields:{Title:kind,FallID:Number(id),Eintragsart:kind,Text:text,Autor:S.account.username,AutorName:S.account.name||S.account.username}})})}
+async function createCase(e){e.preventDefault();try{const file=$('photo').files[0];if(file&&(!file.type.startsWith('image/')||file.size>10*1024*1024))throw Error('Das Foto muss ein Bild unter 10 MB sein.');const photoIds=file?await upload(file):'';const d=await api(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/items`,{method:'POST',body:JSON.stringify({fields:{Title:$('title').value.trim(),Bereich:$('area').value,Beschreibung:$('description').value.trim(),Prioritaet:$('priority').value,Status:'Neu',Melder:S.account.username,MelderName:S.account.name||S.account.username,FotoIds:photoIds}})});await history(d.id,'Änderung','Meldung erstellt.');$('newForm').reset();msg('newMsg','Deine Meldung wurde erfolgreich angelegt.');await load()}catch(err){msg('newMsg',err.message,true)}}
+async function detail(id){const c=S.cases.find(x=>String(x.id)===String(id));if(!c)return;S.back=S.admin?'admin':S.back==='mine'?'mine':'overview';const h=await pages(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items?$expand=fields&$filter=fields/FallID eq ${Number(id)}&$top=200`);const entries=h.map(x=>x.fields).sort((a,b)=>new Date(a.Created||0)-new Date(b.Created||0));$('detail').innerHTML=`
+<h2>#${esc(c.id)} · ${esc(c.Title)}</h2><div class="meta">${status(c.Status)} ${prio(c.Prioritaet)} <span>${esc(c.Bereich||'')}</span></div>
+<h3>Beschreibung</h3><p style="white-space:pre-wrap">${esc(c.Beschreibung||'–')}</p><p class="muted">Gemeldet von: ${esc(c.MelderName||c.Melder)} · ${dt(c.Created)}</p>
+${c.BearbeiterName?`<p><b>Zuständig:</b> ${esc(c.BearbeiterName)} (${esc(c.Bearbeiter||'')})</p>`:''}
+${S.admin?`<h3>Fall bearbeiten</h3><div class="grid">
+<div class="field"><label>Status</label><select id="edStatus">${['Neu','In Bearbeitung','Erledigt'].map(x=>`<option ${c.Status===x?'selected':''}>${x}</option>`)}</select></div>
+<div class="field"><label>Priorität</label><select id="edPriority">${['Dringend','Mittel','Niedrig'].map(x=>`<option ${c.Prioritaet===x?'selected':''}>${x}</option>`)}</select></div>
+<div class="field"><label>Zuständige Person – E-Mail</label><input id="edMail" value="${esc(c.Bearbeiter||'')}" placeholder="name@rosengut.de"></div>
+<div class="field"><label>Name der zuständigen Person</label><input id="edName" value="${esc(c.BearbeiterName||'')}"></div></div><button class="btn" id="save">Änderungen speichern</button>`:''}
+<h3>Verlauf</h3><div class="history">${entries.length?entries.map(x=>`<div class="entry"><small>${dt(x.Created)} · ${esc(x.AutorName||x.Autor||'')} · ${esc(x.Eintragsart||'Eintrag')}</small><p>${esc(x.Text||'')}</p></div>`).join(''):'<p class="muted">Noch keine Einträge.</p>'}</div>
+<h3>Notiz hinzufügen</h3><div class="field"><textarea id="note" placeholder="Notiz oder Rückfrage zum Fall …"></textarea></div><button class="btn secondary" id="addNote">Notiz speichern</button><div id="detailMsg"></div>`;
+go('detail');
+if(S.admin)$('save').onclick=async()=>{try{const fields={Status:$('edStatus').value,Prioritaet:$('edPriority').value,Bearbeiter:$('edMail').value.trim(),BearbeiterName:$('edName').value.trim()};if(fields.Status==='Erledigt'&&c.Status!=='Erledigt'){fields.ErledigtVon=S.account.name||S.account.username;fields.ErledigtAm=new Date().toISOString()}else if(fields.Status!=='Erledigt'){fields.ErledigtVon='';fields.ErledigtAm=null}await api(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/items/${c.id}/fields`,{method:'PATCH',body:JSON.stringify(fields)});await history(c.id,'Änderung',`Aktualisiert: Status ${fields.Status}, Priorität ${fields.Prioritaet}, Zuständig ${fields.BearbeiterName||fields.Bearbeiter||'–'}.`);await load();await detail(id);msg('detailMsg','Änderungen gespeichert.')}catch(e){msg('detailMsg',e.message,true)}};
+$('addNote').onclick=async()=>{try{const n=$('note').value.trim();if(!n)throw Error('Bitte zuerst eine Notiz eingeben.');await history(c.id,'Notiz',n);await detail(id);msg('detailMsg','Notiz gespeichert.')}catch(e){msg('detailMsg',e.message,true)}};
+}
+init().catch(e=>{$('login').classList.remove('hidden');$('login').innerHTML=`<h2>Verbindung fehlgeschlagen</h2><div class="notice error">${esc(e.message)}</div><button class="btn" onclick="location.reload()">Erneut versuchen</button>`});
+})();
+</script></body></html>
