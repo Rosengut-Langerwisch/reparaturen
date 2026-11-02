@@ -57,7 +57,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
 'use strict';
 const CFG={clientId:'0fb63a5b-1b13-4e0a-8557-2539b2b96258',tenantId:'a1401f5e-c83f-4acf-adcb-93291e8b26aa',host:'rosengutde.sharepoint.com',path:'/sites/Reparaturen'};
 const SCOPES=['User.Read','Sites.ReadWrite.All'], $=id=>document.getElementById(id);
-const S={app:null,account:null,site:null,lists:{},admin:false,cases:[],back:'overview'};
+const S={app:null,account:null,site:null,lists:{},photoField:null,admin:false,cases:[],back:'overview'};
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dt=x=>x?new Date(x).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}):'–';
 const status=x=>`<span class="pill ${x==='Erledigt'?'green':x==='Neu'?'red':'purple'}">${esc(x||'Unbekannt')}</span>`;
@@ -73,6 +73,9 @@ async function init(){
  await token();S.site=await api('/sites/'+CFG.host+':'+CFG.path);
  const ls=await api(`/sites/${S.site.id}/lists?$select=id,displayName`);(ls.value||[]).forEach(x=>S.lists[x.displayName]=x);
  for(const n of ['Fälle','Verlauf','Admins','Fotos'])if(!S.lists[n])throw Error(`SharePoint-Element „${n}“ fehlt.`);
+ const caseColumns=await api(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/columns?$select=name,displayName`);
+ const photoColumn=(caseColumns.value||[]).find(c=>(c.displayName||'').toLowerCase()==='fotoids'||(c.name||'').toLowerCase()==='fotoids');
+ S.photoField=photoColumn?.name||null;
  const admins=await pages(`/sites/${S.site.id}/lists/${S.lists.Admins.id}/items?$expand=fields&$top=200`);
  S.admin=admins.some(x=>(x.fields?.Title||'').trim().toLowerCase()===S.account.username.toLowerCase());
  $('userline').innerHTML=`${esc(S.account.name||S.account.username)} <button id="logout">Abmelden</button>`;
@@ -93,7 +96,7 @@ function renderMine(){const list=S.cases.filter(c=>(c.Melder||'').toLowerCase()=
 function renderAdmin(){ $('adminCases').innerHTML=S.cases.length?S.cases.map(card).join(''):'<div class="empty">Keine Meldungen vorhanden.</div>';bindOpen($('adminCases'))}
 async function upload(file){const d=await api(`/sites/${S.site.id}/lists/${S.lists.Fotos.id}/drive`),name=Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_'),t=await token();const r=await fetch(`https://graph.microsoft.com/v1.0/drives/${d.id}/root:/${encodeURIComponent(name)}:/content`,{method:'PUT',headers:{Authorization:'Bearer '+t,'Content-Type':file.type},body:file}),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error?.message||'Foto-Upload fehlgeschlagen');return j.id}
 async function history(id,kind,text){await api(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items`,{method:'POST',body:JSON.stringify({fields:{Title:kind,FallID:Number(id),Eintragsart:kind,Text:text,Autor:S.account.username,AutorName:S.account.name||S.account.username}})})}
-async function createCase(e){e.preventDefault();try{const file=$('photo').files[0];if(file&&(!file.type.startsWith('image/')||file.size>10*1024*1024))throw Error('Das Foto muss ein Bild unter 10 MB sein.');const photoIds=file?await upload(file):'';const d=await api(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/items`,{method:'POST',body:JSON.stringify({fields:{Title:$('title').value.trim(),Bereich:$('area').value,Beschreibung:$('description').value.trim(),Prioritaet:$('priority').value,Status:'Neu',Melder:S.account.username,MelderName:S.account.name||S.account.username,FotoIds:photoIds}})});await history(d.id,'Änderung','Meldung erstellt.');$('newForm').reset();msg('newMsg','Deine Meldung wurde erfolgreich angelegt.');await load()}catch(err){msg('newMsg',err.message,true)}}
+async function createCase(e){e.preventDefault();try{const file=$('photo').files[0];if(file&&(!file.type.startsWith('image/')||file.size>10*1024*1024))throw Error('Das Foto muss ein Bild unter 10 MB sein.');if(file&&!S.photoField)throw Error('Die SharePoint-Spalte „FotoIds“ wurde in der Liste „Fälle“ nicht gefunden. Bitte lege dort eine Textspalte mit dem Namen FotoIds an. Die Meldung wurde nicht angelegt und das Foto nicht hochgeladen.');const fields={Title:$('title').value.trim(),Bereich:$('area').value,Beschreibung:$('description').value.trim(),Prioritaet:$('priority').value,Status:'Neu',Melder:S.account.username,MelderName:S.account.name||S.account.username};if(file)fields[S.photoField]=await upload(file);const d=await api(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/items`,{method:'POST',body:JSON.stringify({fields})});await history(d.id,'Änderung','Meldung erstellt.');$('newForm').reset();msg('newMsg',file?'Meldung und Foto wurden erfolgreich gespeichert.':'Deine Meldung wurde erfolgreich angelegt.');await load()}catch(err){msg('newMsg',err.message,true)}}
 async function detail(id){const c=S.cases.find(x=>String(x.id)===String(id));if(!c)return;S.back=S.admin?'admin':S.back==='mine'?'mine':'overview';const h=await pages(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items?$expand=fields&$filter=fields/FallID eq ${Number(id)}&$top=200`);const entries=h.map(x=>x.fields).sort((a,b)=>new Date(a.Created||0)-new Date(b.Created||0));$('detail').innerHTML=`
 <h2>#${esc(c.id)} · ${esc(c.Title)}</h2><div class="meta">${status(c.Status)} ${prio(c.Prioritaet)} <span>${esc(c.Bereich||'')}</span></div>
 <h3>Beschreibung</h3><p style="white-space:pre-wrap">${esc(c.Beschreibung||'–')}</p><p class="muted">Gemeldet von: ${esc(c.MelderName||c.Melder)} · ${dt(c.Created)}</p>
