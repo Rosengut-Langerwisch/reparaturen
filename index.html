@@ -184,39 +184,49 @@ function canRefreshOpenDetail() {
     return true;
 }
 
+// Automatische Aktualisierung der App
+let refreshInProgress = false;
+let pendingDetailRefresh = false;
+
 async function refreshAppData() {
     if (refreshInProgress || document.hidden || !S.account || !S.site) return;
 
     refreshInProgress = true;
 
     try {
-        // Reparaturfälle neu laden
-        await load();
+        // Bisherige Daten zwischenspeichern
+        const oldCases = JSON.stringify(S.cases);
+        const oldHistory = JSON.stringify(S.historyEntries);
 
-        // Benachrichtigungen und Verlauf aktualisieren
+        // Neue Daten aus SharePoint laden
+        await load();
         await refreshNotifications();
 
-        // Die aktuell geöffnete Ansicht aktualisieren
-        if (S.view === 'overview') {
-            renderAll();
+        // Prüfen, ob sich tatsächlich etwas geändert hat
+        const casesChanged = oldCases !== JSON.stringify(S.cases);
+        const historyChanged = oldHistory !== JSON.stringify(S.historyEntries);
+
+        // Nur bei Änderungen die jeweilige Ansicht aktualisieren
+        if (casesChanged) {
+            if (S.view === 'overview') renderAll();
+            if (S.view === 'mine') renderMine();
+            if (S.view === 'admin') renderAdmin();
         }
 
-        if (S.view === 'mine') {
-            renderMine();
+        // Änderungen im geöffneten Reparaturfall vormerken
+        if (S.view === 'detail' && (casesChanged || historyChanged)) {
+            pendingDetailRefresh = true;
         }
 
-        if (S.view === 'admin') {
-            renderAdmin();
-        }
-
-        // Geöffneten Reparaturfall aktualisieren,
-        // sofern gerade keine Eingaben gemacht werden
-        if (S.view === 'detail' && S.currentCaseId && canRefreshOpenDetail()) {
-            const scrollPosition = window.scrollY;
-
+        // Geöffneten Fall nur aktualisieren, wenn keine Eingabe läuft
+        if (
+            S.view === 'detail' &&
+            S.currentCaseId &&
+            pendingDetailRefresh &&
+            canRefreshOpenDetail()
+        ) {
+            pendingDetailRefresh = false;
             await detail(S.currentCaseId);
-
-            window.scrollTo(0, scrollPosition);
         }
 
     } catch (error) {
@@ -315,7 +325,27 @@ function readSet(){try{return new Set(JSON.parse(localStorage.getItem(readKey())
 async function refreshNotifications(){try{const h=await pages(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items?$expand=fields&$top=500`);S.historyEntries=h.map(x=>({id:x.id,...x.fields}));const events=[];
  if(S.admin){for(const c of S.cases)events.push({id:`case-${c.id}`,caseId:c.id,title:'Neue Reparaturmeldung',text:c.Title||'Ein neuer Fall wurde erstellt.',date:c.Created,kind:'new'});for(const x of S.historyEntries){const c=S.cases.find(y=>String(y.id)===String(x.FallID));if(c&&String(x.Autor||'').toLowerCase()!==S.account.username.toLowerCase()&&(['Notiz','Kommentar'].includes(x[S.historyTypeField||'Eintragsart'])))events.push({id:`history-${x.id}`,caseId:x.FallID,title:'Neuer Kommentar',text:`${c.Title}: ${x.Text||''}`,date:x.Created,kind:'note'})}}
  else{for(const x of S.historyEntries){const c=S.cases.find(y=>String(y.id)===String(x.FallID));if(!c||!ownCase(c)||String(x.Autor||'').toLowerCase()===S.account.username.toLowerCase())continue;const type=x[S.historyTypeField||'Eintragsart']||'';const text=String(x.Text||'');if(type==='Notiz'||type==='Kommentar'||text.includes('Status auf Erledigt gesetzt'))events.push({id:`history-${x.id}`,caseId:c.id,title:text.includes('Status auf Erledigt gesetzt')?'Fall erledigt':'Neuer Kommentar',text:`${c.Title}: ${text}`,date:x.Created,kind:'note'})}}
- S.notifications=events.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));if(localStorage.getItem(readKey())===null)localStorage.setItem(readKey(),JSON.stringify(S.notifications.map(n=>n.id)));renderNotifications();}catch(e){console.warn('Benachrichtigungen konnten nicht geladen werden',e)}}
+ const newNotifications = events.sort(
+    (a, b) => new Date(b.date || 0) - new Date(a.date || 0)
+);
+
+const notificationsChanged =
+    JSON.stringify(S.notifications) !== JSON.stringify(newNotifications);
+
+S.notifications = newNotifications;
+
+if (localStorage.getItem(readKey()) === null) {
+    localStorage.setItem(
+        readKey(),
+        JSON.stringify(S.notifications.map(n => n.id))
+    );
+}
+
+// Nur bei tatsächlichen Änderungen neu darstellen
+if (notificationsChanged || !$('notificationPanel').dataset.initialized) {
+    renderNotifications();
+    $('notificationPanel').dataset.initialized = 'true';
+}}catch(e){console.warn('Benachrichtigungen konnten nicht geladen werden',e)}}
 function renderNotifications(){const read=readSet(),unread=S.notifications.filter(n=>!read.has(n.id)).length;$('notificationCount').textContent=unread>99?'99+':unread;$('notificationCount').style.display=unread?'block':'none';$('notificationPanel').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>Benachrichtigungen</b><button class="btn secondary" id="markAllRead" style="padding:6px 9px">Alle gelesen</button></div>${S.notifications.length?S.notifications.map(n=>`<div class="notification-item ${read.has(n.id)?'':'unread'}"><a href="#" data-notification-case="${esc(n.caseId)}" data-notification-id="${esc(n.id)}" style="color:inherit;text-decoration:none"><b>${esc(n.title)}</b><div>${esc(n.text)}</div><small>${dt(n.date)}</small></a></div>`).join(''):'<p class="muted">Keine Benachrichtigungen vorhanden.</p>'}`;$('markAllRead').onclick=()=>{localStorage.setItem(readKey(),JSON.stringify(S.notifications.map(n=>n.id)));renderNotifications()};$('notificationPanel').querySelectorAll('[data-notification-case]').forEach(a=>a.onclick=e=>{e.preventDefault();const set=readSet();set.add(a.dataset.notificationId);localStorage.setItem(readKey(),JSON.stringify([...set]));$('notificationPanel').classList.add('hidden');detail(a.dataset.notificationCase)})}
 async function toggleNotifications(){const p=$('notificationPanel');if(p.classList.contains('hidden')){await refreshNotifications();p.classList.remove('hidden')}else p.classList.add('hidden')}
 document.addEventListener('click',e=>{if(!e.target.closest('.header-right'))$('notificationPanel').classList.add('hidden')});
