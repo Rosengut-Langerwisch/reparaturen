@@ -92,7 +92,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
 'use strict';
 const CFG={clientId:'0fb63a5b-1b13-4e0a-8557-2539b2b96258',tenantId:'a1401f5e-c83f-4acf-adcb-93291e8b26aa',host:'rosengutde.sharepoint.com',path:'/sites/Reparaturen'};
 const SCOPES=['User.Read','Sites.ReadWrite.All'], $=id=>document.getElementById(id);
-const S={app:null,account:null,site:null,lists:{},photoField:null,photoDriveId:null,photoUrls:{},historyTypeField:null,historyPhotoField:null,employeeNameField:null,employeeRoleField:null,admin:false,cases:[],back:'overview',historyEntries:[],notifications:[],view:'home',currentCaseId:null,autoRefreshTimer:null};
+const S={app:null,account:null,site:null,lists:{},photoField:null,photoDriveId:null,photoUrls:{},historyTypeField:null,historyPhotoField:null,employeeNameField:null,employeeRoleField:null,admin:false,cases:[],back:'overview',historyEntries:[],notifications:[]};
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dt=x=>x?new Date(x).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}):'–';
 const status=x=>`<span class="pill ${x==='Erledigt'?'status-done':x==='Neu'?'status-new':'status-progress'}">${esc(x||'Unbekannt')}</span>`;
@@ -141,118 +141,11 @@ if (requestedCaseId && S.cases.some(c => String(c.id) === String(requestedCaseId
   go('overview');
 }
 
-startAutoRefresh();
+setInterval(()=>refreshNotifications(),60000);
 }
 async function registerEmployee(){const rows=await pages(`/sites/${S.site.id}/lists/${S.lists.Mitarbeiter.id}/items?$expand=fields&$top=500`);const email=(S.account.username||'').toLowerCase();const found=rows.find(x=>String(x.fields?.Title||'').trim().toLowerCase()===email);const fields={Title:email,[S.employeeNameField]:S.account.name||email,[S.employeeRoleField]:S.admin?'Admin':'Mitarbeiter'};if(found)await api(`/sites/${S.site.id}/lists/${S.lists.Mitarbeiter.id}/items/${found.id}/fields`,{method:'PATCH',body:JSON.stringify(fields)});else await api(`/sites/${S.site.id}/lists/${S.lists.Mitarbeiter.id}/items`,{method:'POST',body:JSON.stringify({fields})});}
 async function load(){const rows=await pages(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/items?$expand=fields&$top=200`);S.cases=rows.map(r=>({id:r.id,...r.fields})).sort((a,b)=>new Date(b.Created||0)-new Date(a.Created||0));}
- // Automatische Aktualisierung der App
-let refreshInProgress = false;
-
-function canRefreshOpenDetail() {
-    const detailElement = $('detail');
-
-    if (!detailElement) return true;
-
-    // Nicht aktualisieren, solange ein Eingabefeld aktiv ist
-    const active = document.activeElement;
-
-    if (
-        active &&
-        detailElement.contains(active) &&
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)
-    ) {
-        return false;
-    }
-
-    // Keine Aktualisierung bei einem bereits geschriebenen Kommentar
-    const note = $('note');
-
-    if (note && note.value.trim()) return false;
-
-    // Keine Aktualisierung bei ausgewähltem Foto
-    const notePhoto = $('notePhoto');
-
-    if (notePhoto && notePhoto.files.length) return false;
-
-    // Keine Aktualisierung, solange ein Bearbeitungsformular geöffnet ist
-    const employeeEdit = $('employeeEdit');
-    const adminEdit = $('adminEdit');
-
-    if (employeeEdit && !employeeEdit.classList.contains('hidden')) return false;
-    if (adminEdit && !adminEdit.classList.contains('hidden')) return false;
-
-    return true;
-}
-
-// Automatische Aktualisierung der App
-let refreshInProgress = false;
-let pendingDetailRefresh = false;
-
-async function refreshAppData() {
-    if (refreshInProgress || document.hidden || !S.account || !S.site) return;
-
-    refreshInProgress = true;
-
-    try {
-        // Bisherige Daten zwischenspeichern
-        const oldCases = JSON.stringify(S.cases);
-        const oldHistory = JSON.stringify(S.historyEntries);
-
-        // Neue Daten aus SharePoint laden
-        await load();
-        await refreshNotifications();
-
-        // Prüfen, ob sich tatsächlich etwas geändert hat
-        const casesChanged = oldCases !== JSON.stringify(S.cases);
-        const historyChanged = oldHistory !== JSON.stringify(S.historyEntries);
-
-        // Nur bei Änderungen die jeweilige Ansicht aktualisieren
-        if (casesChanged) {
-            if (S.view === 'overview') renderAll();
-            if (S.view === 'mine') renderMine();
-            if (S.view === 'admin') renderAdmin();
-        }
-
-        // Änderungen im geöffneten Reparaturfall vormerken
-        if (S.view === 'detail' && (casesChanged || historyChanged)) {
-            pendingDetailRefresh = true;
-        }
-
-        // Geöffneten Fall nur aktualisieren, wenn keine Eingabe läuft
-        if (
-            S.view === 'detail' &&
-            S.currentCaseId &&
-            pendingDetailRefresh &&
-            canRefreshOpenDetail()
-        ) {
-            pendingDetailRefresh = false;
-            await detail(S.currentCaseId);
-        }
-
-    } catch (error) {
-        console.warn('Automatische Aktualisierung fehlgeschlagen:', error);
-    } finally {
-        refreshInProgress = false;
-    }
-}
-
-function startAutoRefresh() {
-    // Vorhandenen Timer gegebenenfalls entfernen
-    if (S.autoRefreshTimer) {
-        clearInterval(S.autoRefreshTimer);
-    }
-
-    // Alle 5 Sekunden aktualisieren
-    S.autoRefreshTimer = setInterval(refreshAppData, 5000);
-
-    // Beim Zurückkehren in den Browser sofort aktualisieren
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            refreshAppData();
-        }
-    });
-}
-function go(v){S.view=v;['new','overview','mine','admin','detail','employees'].forEach(x=>$('v-'+x).classList.toggle('hidden',x!==v));if(v==='home')['new','overview','mine','admin','detail','employees'].forEach(x=>$('v-'+x).classList.add('hidden'));if(v==='overview')renderAll();if(v==='mine')renderMine();if(v==='admin'){if(!S.admin)return go('home');renderAdmin()}if(v==='employees')renderEmployees()}
+function go(v){['new','overview','mine','admin','detail','employees'].forEach(x=>$('v-'+x).classList.toggle('hidden',x!==v));if(v==='home')['new','overview','mine','admin','detail','employees'].forEach(x=>$('v-'+x).classList.add('hidden'));if(v==='overview')renderAll();if(v==='mine')renderMine();if(v==='admin'){if(!S.admin)return go('home');renderAdmin()}if(v==='employees')renderEmployees()}
 function photoId(c){const v=S.photoField?c[S.photoField]:null;return String(v||c.FotoIDs||c.FotoIds||c.FotoID||'').split(',')[0].trim()}
 function photoMarkup(c,detailView=false){const id=photoId(c);return id?`<img class="${detailView?'detail-photo':'case-photo'}" data-photo-id="${esc(id)}" alt="Foto zum Reparaturfall" ${detailView?'':'loading="lazy"'}>`:''}
 async function loadPhotos(root){const imgs=[...root.querySelectorAll('img[data-photo-id]')];await Promise.all(imgs.map(async img=>{const id=img.dataset.photoId;if(!id||!S.photoDriveId)return;try{if(!Object.prototype.hasOwnProperty.call(S.photoUrls,id)){let url='';try{const th=await api(`/drives/${S.photoDriveId}/items/${encodeURIComponent(id)}/thumbnails`);const t=th.value?.[0];url=t?.medium?.url||t?.large?.url||t?.small?.url||''}catch(_){}if(!url){const item=await api(`/drives/${S.photoDriveId}/items/${encodeURIComponent(id)}`);url=item['@microsoft.graph.downloadUrl']||''}S.photoUrls[id]=url||null}if(S.photoUrls[id])img.src=S.photoUrls[id];else img.alt='Foto konnte nicht geladen werden';try{const item=await api(`/drives/${S.photoDriveId}/items/${encodeURIComponent(id)}`);img.dataset.fullSrc=item['@microsoft.graph.downloadUrl']||S.photoUrls[id]||''}catch(_){img.dataset.fullSrc=S.photoUrls[id]||''}}catch(e){img.alt='Foto konnte nicht geladen werden';console.warn('Foto konnte nicht geladen werden',id,e)}}))}
@@ -299,10 +192,7 @@ function renderChatEntries(entries,caseId){
   return `${separator}<div class="chat-row ${isOwn?'own':'other'}">${isOwn?'':`<div class="chat-avatar" aria-hidden="true">${esc(initials)}</div>`}<div class="chat-bubble"><div class="chat-author">${esc(isOwn?'Du':author)}</div><div class="chat-message">${esc(x.Text||'')}</div>${photo}<div class="chat-time">${esc(time)}</div></div></div>`;
  }).join('');
 }
-async function detail(id){
-S.currentCaseId = String(id);
-const c=S.cases.find(x=>String(x.id)===String(id));
-if(!c)return;S.back=S.admin?'admin':ownCase(c)?'mine':'overview';go('detail');$('detail').innerHTML='<div class="notice">Details werden geladen …</div>';let entries=[];let historyError='';try{const h=await pages(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items?$expand=fields&$top=500`);S.historyEntries=h.map(x=>({id:x.id,...x.fields}));entries=S.historyEntries.filter(f=>String(f.FallID)===String(id)).sort((a,b)=>new Date(a.Created||0)-new Date(b.Created||0));}catch(e){historyError=e.message||'Der Verlauf konnte nicht geladen werden.';}
+async function detail(id){const c=S.cases.find(x=>String(x.id)===String(id));if(!c)return;S.back=S.admin?'admin':ownCase(c)?'mine':'overview';go('detail');$('detail').innerHTML='<div class="notice">Details werden geladen …</div>';let entries=[];let historyError='';try{const h=await pages(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items?$expand=fields&$top=500`);S.historyEntries=h.map(x=>({id:x.id,...x.fields}));entries=S.historyEntries.filter(f=>String(f.FallID)===String(id)).sort((a,b)=>new Date(a.Created||0)-new Date(b.Created||0));}catch(e){historyError=e.message||'Der Verlauf konnte nicht geladen werden.';}
  const canEdit=ownCase(c)&&!S.admin&&c.Status!=='Erledigt';
  $('detail').innerHTML=`<div class="detail-heading"><h2>#${esc(c.id)} · ${esc(c.Title)}</h2>${(canEdit||(S.admin&&c.Status!=='Erledigt'))?'<button type="button" class="icon-action" id="detailEditToggle" title="Angaben bearbeiten" aria-label="Angaben bearbeiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button>':''}</div><div class="meta">${status(c.Status)} ${prio(c.Prioritaet)} <span>${esc(c.Bereich||'')}</span></div><h3>Beschreibung</h3><p style="white-space:pre-wrap">${esc(c.Beschreibung||'–')}</p>${photoMarkup(c,true)}<p class="muted">Gemeldet von: ${esc(c.MelderName||c.Melder)} · ${dt(c.Created)}</p>${c.BearbeiterName?`<p><b>Zuständig:</b> ${esc(c.BearbeiterName)} (${esc(c.Bearbeiter||'')})</p>`:''}
  ${canEdit?`<section class="panel" style="padding:16px;background:#f8faf8"><h3 style="margin-top:0">Deine Meldung</h3><div id="employeeEdit" class="hidden" style="margin-top:14px">${editForm(c)}</div></section>`:''}
@@ -325,27 +215,7 @@ function readSet(){try{return new Set(JSON.parse(localStorage.getItem(readKey())
 async function refreshNotifications(){try{const h=await pages(`/sites/${S.site.id}/lists/${S.lists.Verlauf.id}/items?$expand=fields&$top=500`);S.historyEntries=h.map(x=>({id:x.id,...x.fields}));const events=[];
  if(S.admin){for(const c of S.cases)events.push({id:`case-${c.id}`,caseId:c.id,title:'Neue Reparaturmeldung',text:c.Title||'Ein neuer Fall wurde erstellt.',date:c.Created,kind:'new'});for(const x of S.historyEntries){const c=S.cases.find(y=>String(y.id)===String(x.FallID));if(c&&String(x.Autor||'').toLowerCase()!==S.account.username.toLowerCase()&&(['Notiz','Kommentar'].includes(x[S.historyTypeField||'Eintragsart'])))events.push({id:`history-${x.id}`,caseId:x.FallID,title:'Neuer Kommentar',text:`${c.Title}: ${x.Text||''}`,date:x.Created,kind:'note'})}}
  else{for(const x of S.historyEntries){const c=S.cases.find(y=>String(y.id)===String(x.FallID));if(!c||!ownCase(c)||String(x.Autor||'').toLowerCase()===S.account.username.toLowerCase())continue;const type=x[S.historyTypeField||'Eintragsart']||'';const text=String(x.Text||'');if(type==='Notiz'||type==='Kommentar'||text.includes('Status auf Erledigt gesetzt'))events.push({id:`history-${x.id}`,caseId:c.id,title:text.includes('Status auf Erledigt gesetzt')?'Fall erledigt':'Neuer Kommentar',text:`${c.Title}: ${text}`,date:x.Created,kind:'note'})}}
- const newNotifications = events.sort(
-    (a, b) => new Date(b.date || 0) - new Date(a.date || 0)
-);
-
-const notificationsChanged =
-    JSON.stringify(S.notifications) !== JSON.stringify(newNotifications);
-
-S.notifications = newNotifications;
-
-if (localStorage.getItem(readKey()) === null) {
-    localStorage.setItem(
-        readKey(),
-        JSON.stringify(S.notifications.map(n => n.id))
-    );
-}
-
-// Nur bei tatsächlichen Änderungen neu darstellen
-if (notificationsChanged || !$('notificationPanel').dataset.initialized) {
-    renderNotifications();
-    $('notificationPanel').dataset.initialized = 'true';
-}}catch(e){console.warn('Benachrichtigungen konnten nicht geladen werden',e)}}
+ S.notifications=events.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));if(localStorage.getItem(readKey())===null)localStorage.setItem(readKey(),JSON.stringify(S.notifications.map(n=>n.id)));renderNotifications();}catch(e){console.warn('Benachrichtigungen konnten nicht geladen werden',e)}}
 function renderNotifications(){const read=readSet(),unread=S.notifications.filter(n=>!read.has(n.id)).length;$('notificationCount').textContent=unread>99?'99+':unread;$('notificationCount').style.display=unread?'block':'none';$('notificationPanel').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>Benachrichtigungen</b><button class="btn secondary" id="markAllRead" style="padding:6px 9px">Alle gelesen</button></div>${S.notifications.length?S.notifications.map(n=>`<div class="notification-item ${read.has(n.id)?'':'unread'}"><a href="#" data-notification-case="${esc(n.caseId)}" data-notification-id="${esc(n.id)}" style="color:inherit;text-decoration:none"><b>${esc(n.title)}</b><div>${esc(n.text)}</div><small>${dt(n.date)}</small></a></div>`).join(''):'<p class="muted">Keine Benachrichtigungen vorhanden.</p>'}`;$('markAllRead').onclick=()=>{localStorage.setItem(readKey(),JSON.stringify(S.notifications.map(n=>n.id)));renderNotifications()};$('notificationPanel').querySelectorAll('[data-notification-case]').forEach(a=>a.onclick=e=>{e.preventDefault();const set=readSet();set.add(a.dataset.notificationId);localStorage.setItem(readKey(),JSON.stringify([...set]));$('notificationPanel').classList.add('hidden');detail(a.dataset.notificationCase)})}
 async function toggleNotifications(){const p=$('notificationPanel');if(p.classList.contains('hidden')){await refreshNotifications();p.classList.remove('hidden')}else p.classList.add('hidden')}
 document.addEventListener('click',e=>{if(!e.target.closest('.header-right'))$('notificationPanel').classList.add('hidden')});
