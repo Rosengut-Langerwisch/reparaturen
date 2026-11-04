@@ -130,7 +130,18 @@ async function init(){
  document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>go('home'));
  $('newForm').onsubmit=createCase;$('back').onclick=()=>go(S.back);
  ['search','fStatus','fPriority','fArea'].forEach(id=>$(id).addEventListener('input',renderAll));
- await load();await refreshNotifications();go('overview');setInterval(()=>refreshNotifications(),60000);
+ await load();
+await refreshNotifications();
+
+const requestedCaseId = new URLSearchParams(location.search).get('caseId');
+
+if (requestedCaseId && S.cases.some(c => String(c.id) === String(requestedCaseId))) {
+  await detail(requestedCaseId);
+} else {
+  go('overview');
+}
+
+setInterval(()=>refreshNotifications(),60000);
 }
 async function registerEmployee(){const rows=await pages(`/sites/${S.site.id}/lists/${S.lists.Mitarbeiter.id}/items?$expand=fields&$top=500`);const email=(S.account.username||'').toLowerCase();const found=rows.find(x=>String(x.fields?.Title||'').trim().toLowerCase()===email);const fields={Title:email,[S.employeeNameField]:S.account.name||email,[S.employeeRoleField]:S.admin?'Admin':'Mitarbeiter'};if(found)await api(`/sites/${S.site.id}/lists/${S.lists.Mitarbeiter.id}/items/${found.id}/fields`,{method:'PATCH',body:JSON.stringify(fields)});else await api(`/sites/${S.site.id}/lists/${S.lists.Mitarbeiter.id}/items`,{method:'POST',body:JSON.stringify({fields})});}
 async function load(){const rows=await pages(`/sites/${S.site.id}/lists/${S.lists['Fälle'].id}/items?$expand=fields&$top=200`);S.cases=rows.map(r=>({id:r.id,...r.fields})).sort((a,b)=>new Date(b.Created||0)-new Date(a.Created||0));}
