@@ -147,7 +147,7 @@ async function init(){
  $('brandHome').onclick=e=>{e.preventDefault();go('overview')};$('newCaseBtn').onclick=()=>go('new');
  document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>go('home'));
  $('newForm').onsubmit=createCase;$('back').onclick=()=>go(S.back);
- ['search','fStatus','sortCases','fArea'].forEach(id=>$(id).addEventListener('input',renderAll));
+ ['search','fStatus','sortCases'].forEach(id=>$(id).addEventListener('input',renderAll));
  await load();
 await refreshNotifications();
 
