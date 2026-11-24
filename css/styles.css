@@ -89,3 +89,4 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
 .filter-field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
 .filter-label{margin:0;font-size:14px;font-weight:bold;color:var(--gd)}
 .toolbar-group .filter-field select{flex:none;width:100%}
+.toolbar-group .filter-field input{flex:none;width:100%}
