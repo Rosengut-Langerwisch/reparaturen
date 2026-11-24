@@ -84,3 +84,8 @@ textarea{min-height:105px;resize:vertical}.field{margin:0 0 13px}.grid{display:g
 footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
 @media(max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.case{align-items:flex-start;flex-direction:column}main{padding:20px 12px}}
 .modal-backdrop{position:fixed;inset:0;background:#0006;display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}.assign-dialog{width:min(460px,100%);box-shadow:0 12px 40px #0003}.assign-dialog label{display:block;margin:12px 0 6px}.assign-dialog select{width:100%;padding:12px;border:1px solid #bbb;border-radius:8px;font:inherit;background:white}.assign-dialog .actions{margin-top:18px}
+
+.toolbar-group .toolbar{align-items:flex-end}
+.filter-field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
+.filter-label{margin:0;font-size:14px;font-weight:bold;color:var(--gd)}
+.toolbar-group .filter-field select{flex:none;width:100%}

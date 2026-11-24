@@ -19,18 +19,18 @@ function updateFilterOptions(q,statusFilter,creator,assignee){
  const statusBase=c=>caseMatches(c,{q,creator,assignee});
  const statusCounts={'open':S.cases.filter(c=>statusBase(c)&&(c.Status==='Neu'||c.Status==='In Bearbeitung')).length,'':S.cases.filter(statusBase).length,'Neu':S.cases.filter(c=>statusBase(c)&&c.Status==='Neu').length,'In Bearbeitung':S.cases.filter(c=>statusBase(c)&&c.Status==='In Bearbeitung').length,'Erledigt':S.cases.filter(c=>statusBase(c)&&c.Status==='Erledigt').length};
  const status=$('fStatus'),statusValue=status.value;
- status.innerHTML=`<option value="open">Offen (${statusCounts.open})</option><option value="">Alle Status (${statusCounts['']})</option><option value="Neu">Neu (${statusCounts.Neu})</option><option value="In Bearbeitung">In Bearbeitung (${statusCounts['In Bearbeitung']})</option><option value="Erledigt">Erledigt (${statusCounts.Erledigt})</option>`;status.value=statusValue;
+ status.innerHTML=`<option value="open">Offen (${statusCounts.open})</option><option value="">Alle (${statusCounts['']})</option><option value="Neu">Neu (${statusCounts.Neu})</option><option value="In Bearbeitung">In Bearbeitung (${statusCounts['In Bearbeitung']})</option><option value="Erledigt">Erledigt (${statusCounts.Erledigt})</option>`;status.value=statusValue;
  const creatorBase=c=>caseMatches(c,{q,statusFilter,assignee});
  const creatorOptions=personOptions('Melder','MelderName');
  const creatorCounts=new Map(creatorOptions.map(person=>[person.email.toLowerCase(),S.cases.filter(c=>creatorBase(c)&&String(c.Melder||'').toLowerCase()===person.email.toLowerCase()).length]));
  const creatorSelect=$('fCreator'),creatorValue=creatorSelect.value;
- creatorSelect.innerHTML=`<option value="">Alle Ersteller (${S.cases.filter(creatorBase).length})</option>`+creatorOptions.map(person=>`<option value="${esc(person.email)}">${esc(person.name)} · ${esc(person.email)} (${creatorCounts.get(person.email.toLowerCase())||0})</option>`).join('');creatorSelect.value=creatorValue;
+ creatorSelect.innerHTML=`<option value="">Alle (${S.cases.filter(creatorBase).length})</option>`+creatorOptions.map(person=>`<option value="${esc(person.email)}">${esc(person.name)} · ${esc(person.email)} (${creatorCounts.get(person.email.toLowerCase())||0})</option>`).join('');creatorSelect.value=creatorValue;
  const assigneeBase=c=>caseMatches(c,{q,statusFilter,creator});
  const assigneeOptions=personOptions('Bearbeiter','BearbeiterName');
  const assigneeCounts=new Map(assigneeOptions.map(person=>[person.email.toLowerCase(),S.cases.filter(c=>assigneeBase(c)&&String(c.Bearbeiter||'').toLowerCase()===person.email.toLowerCase()).length]));
  const unassigned=S.cases.filter(c=>assigneeBase(c)&&!c.Bearbeiter).length;
  const assigneeSelect=$('fAssignee'),assigneeValue=assigneeSelect.value;
- assigneeSelect.innerHTML=`<option value="">Alle Bearbeiter (${S.cases.filter(assigneeBase).length})</option>`+assigneeOptions.map(person=>`<option value="${esc(person.email)}">${esc(person.name)} · ${esc(person.email)} (${assigneeCounts.get(person.email.toLowerCase())||0})</option>`).join('')+`<option value="__unassigned__">Nicht zugewiesen (${unassigned})</option>`;assigneeSelect.value=assigneeValue;
+ assigneeSelect.innerHTML=`<option value="">Alle (${S.cases.filter(assigneeBase).length})</option>`+assigneeOptions.map(person=>`<option value="${esc(person.email)}">${esc(person.name)} · ${esc(person.email)} (${assigneeCounts.get(person.email.toLowerCase())||0})</option>`).join('')+`<option value="__unassigned__">Nicht zugewiesen (${unassigned})</option>`;assigneeSelect.value=assigneeValue;
 }
 function renderAll(){
  const q=$('search').value.toLowerCase(),s=$('fStatus').value,creator=$('fCreator').value,assignee=$('fAssignee').value,sort=$('sortCases').value;
