@@ -1,7 +1,6 @@
 'use strict';
 async function initApp(){
- S.app=new msal.PublicClientApplication({auth:{clientId:CFG.clientId,authority:'https://login.microsoftonline.com/'+CFG.tenantId,redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});
- await S.app.initialize();const rr=await S.app.handleRedirectPromise();S.account=(rr&&rr.account)||S.app.getAllAccounts()[0];
+ await createMsal();let rr=null;try{rr=await S.app.handleRedirectPromise()}catch(e){console.warn('MSAL-Zwischenspeicher wird zurückgesetzt',e);resetMsalCache();await createMsal()}S.account=(rr&&rr.account)||S.app.getAllAccounts()[0];
  if(!S.account){$('login').classList.remove('hidden');$('loginBtn').onclick=()=>S.app.loginRedirect({scopes:SCOPES});return}
  await token();S.site=await api('/sites/'+CFG.host+':'+CFG.path);
  const ls=await api(`/sites/${S.site.id}/lists?$select=id,displayName`);(ls.value||[]).forEach(x=>S.lists[x.displayName]=x);
@@ -32,6 +31,7 @@ async function initApp(){
  const params=new URLSearchParams(location.search);let handled=false;
  for(const m of MODULES){if(m.deepLink&&await m.deepLink(params)){handled=true;break}}
  if(!handled)go('home');
+ sessionStorage.removeItem('msalAutoReset');
  setInterval(()=>MODULES.forEach(m=>m.poll&&m.poll()),60000);
 }
 function renderTiles(){$('homeTiles').innerHTML=MODULES.filter(m=>m.tile).map(m=>`<button class="tile" data-view="${esc(m.tile.view)}"><div class="symbol">${esc(m.tile.symbol)}</div><b>${esc(m.tile.title)}</b><span>${esc(m.tile.text)}</span></button>`).join('')}
